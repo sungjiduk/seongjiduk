@@ -14,6 +14,16 @@
 - 대표 데모 콘텐츠: 러브라이브! 뮤즈
 - 핵심 플로우: 작품 선택 -> 지도 스팟 확인 -> 기간/예산/출발지 선택 -> AI 루트 생성 -> 저장/공유
 
+## Repository 구성
+
+성지덕은 front/back 분리 repo로 운영합니다.
+
+| Repo | 역할 |
+|------|------|
+| [sungjiduk/seongjiduk](https://github.com/sungjiduk/seongjiduk) | 기획/문서/발표자료 SSOT |
+| [sungjiduk/seongjiduk-backend](https://github.com/sungjiduk/seongjiduk-backend) | Spring Boot API, LangGraph AI 서비스, Docker/인프라 |
+| [sungjiduk/seongjiduk-frontend](https://github.com/sungjiduk/seongjiduk-frontend) | 사용자/관리자 웹 UI |
+
 ## AI/협업 시작점
 👉 작업 전 **[`CLAUDE.md`](./CLAUDE.md)** 를 먼저 읽으세요 (SSOT·작업 규칙). `AGENTS.md`도 동일.
 
@@ -37,10 +47,6 @@
 │   ├── 10_컨벤션.md
 │   ├── 11_Git_브랜치_PR_규칙.md
 │   └── decisions/              # ADR (주요 의사결정)
-├── 백엔드/                     # Spring Boot (Java 25+)
-├── 프론트엔드/                 # 사용자 UI
-├── ai-service/                 # LangGraph (Python), REST 연동
-├── 인프라/                     # docker / github-actions / cloud
 └── 발표자료/                   # 슬라이드, 다이어그램 export
 ```
 

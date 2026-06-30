@@ -2,22 +2,24 @@
 
 ## 레포 전략
 
-성지덕은 monorepo로 관리한다.
+성지덕은 front/back 분리 repo로 관리한다.
 
 ```text
-백엔드/      Spring Boot API
-프론트엔드/  사용자 UI
-ai-service/ LangGraph AI 서비스
-인프라/      Docker, GitHub Actions, Cloud
-기획/        SSOT 문서
-발표자료/    발표 산출물
+sungjiduk/seongjiduk           기획/문서/발표자료 SSOT
+sungjiduk/seongjiduk-backend   Spring Boot API, LangGraph AI 서비스, 인프라
+sungjiduk/seongjiduk-frontend  사용자/관리자 웹 UI
 ```
 
-프론트/백엔드를 별도 레포로 나누지 않는 이유:
+front/back을 나누는 이유:
 
-- Docker Compose, CI/CD, 배포 문서가 한 레포에서 관리되는 편이 단순하다.
-- API/ERD/기능 명세 변경을 같은 PR에서 함께 추적할 수 있다.
-- 2026-07-10 발표까지 일정이 짧아 레포 간 동기화 비용을 줄이는 것이 중요하다.
+- 프론트와 백엔드 담당자가 독립적으로 작업하기 쉽다.
+- 각 repo의 CI를 역할에 맞게 단순화할 수 있다.
+- 기획/ERD/API 명세는 `sungjiduk/seongjiduk`에만 두어 SSOT를 유지한다.
+
+주의:
+
+- API/ERD/기능 변경은 코드 repo PR과 별개로 문서 repo도 함께 갱신해야 한다.
+- 백엔드와 프론트가 충돌하면 `기획/05_API_명세.md`를 기준으로 맞춘다.
 
 ## 브랜치 전략
 

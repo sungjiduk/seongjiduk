@@ -52,3 +52,6 @@ application-local.yml
 
 # Generated documents
 발표자료/assets/generated/
+
+# Local split repository working copies
+repositories/

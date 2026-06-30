@@ -31,10 +31,7 @@ jobs:
           test -f 기획/06_AI_에이전트_설계.md
           test -f 기획/07_관리자_통계_설계.md
 
-      - name: Verify workspace folders
+      - name: Verify document folders
         run: |
-          test -d 백엔드
-          test -d 프론트엔드
-          test -d ai-service
-          test -d 인프라
+          test -d 기획
           test -d 발표자료

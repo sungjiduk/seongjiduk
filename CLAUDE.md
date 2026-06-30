@@ -34,22 +34,23 @@
 - **트러블슈팅**: 막혔다가 푼 문제는 `기획/09_트러블슈팅.md`에 증상/원인/해결로 기록한다(제출물이기도 함).
 - **체크리스트 동기화**: 기능을 완료하면 `기획/08_일정_체크리스트.md`의 항목을 갱신한다.
 
-## 3. 코드 위치 규칙
+## 3. Repository / 코드 위치 규칙
 
 | 영역 | 위치 | 비고 |
 |------|------|------|
-| 백엔드 (Spring Boot) | `백엔드/` | REST API, 인증, 도메인, 통계 |
-| 프론트엔드 | `프론트엔드/` | 접속 가능한 UI (평가 대상 아님, 동작 우선) |
-| AI 서비스 (LangGraph) | `ai-service/` | Python. 백엔드와 REST로 통신 |
-| 인프라 | `인프라/` | docker / github-actions / cloud |
-| 발표 자료 | `발표자료/` | 슬라이드, 다이어그램 export |
+| 기획/문서 | `sungjiduk/seongjiduk` | SSOT, 발표자료 |
+| 백엔드 (Spring Boot) | `sungjiduk/seongjiduk-backend` | REST API, 인증, 도메인, 통계 |
+| AI 서비스 (LangGraph) | `sungjiduk/seongjiduk-backend/ai-service` | Python. 백엔드와 REST로 통신 |
+| 인프라 | `sungjiduk/seongjiduk-backend/infra` | docker / github-actions / cloud |
+| 프론트엔드 | `sungjiduk/seongjiduk-frontend` | 접속 가능한 UI (평가 대상 아님, 동작 우선) |
+| 발표 자료 | `sungjiduk/seongjiduk/발표자료` | 슬라이드, 다이어그램 export |
 
 ## 4. 아키텍처 메모
 
-- Spring Boot(`백엔드/`)가 메인 API 서버. 인증·영속화·관리자 통계 담당.
-- LangGraph는 Python 생태계가 본류라 `ai-service/`로 **분리**해 컨테이너화하고, 백엔드와 내부 REST(HTTP)로 호출한다.
+- Spring Boot(`seongjiduk-backend`)가 메인 API 서버. 인증·영속화·관리자 통계 담당.
+- LangGraph는 Python 생태계가 본류라 `seongjiduk-backend/ai-service`로 **분리**해 컨테이너화하고, 백엔드와 내부 REST(HTTP)로 호출한다.
 - DB는 PostgreSQL 우선. MVP는 구조화된 시드 성지 데이터 기반이며, 추후 RAG/벡터 검색이 필요하면 pgvector 확장 검토.
-- 전부 `인프라/docker`의 docker-compose로 묶어 로컬/배포 동일 구성 지향.
+- 전부 `seongjiduk-backend/infra`의 docker-compose로 묶어 로컬/배포 동일 구성 지향.
 
 ## 5. 다음 작업 (현재 상태)
 
