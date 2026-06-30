@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  pull_request:
+    branches:
+      - dev
+      - main
+  push:
+    branches:
+      - dev
+      - main
+
+jobs:
+  workspace-check:
+    name: Workspace check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Verify required documents
+        run: |
+          test -f README.md
+          test -f CLAUDE.md
+          test -f AGENTS.md
+          test -f 프로젝트3_요구사항.md
+          test -f 기획/02_최종_기획서.md
+          test -f 기획/03_기능_명세.md
+          test -f 기획/04_도메인_모델_ERD.md
+          test -f 기획/05_API_명세.md
+          test -f 기획/06_AI_에이전트_설계.md
+          test -f 기획/07_관리자_통계_설계.md
+
+      - name: Verify workspace folders
+        run: |
+          test -d 백엔드
+          test -d 프론트엔드
+          test -d ai-service
+          test -d 인프라
+          test -d 발표자료

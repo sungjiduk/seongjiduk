@@ -1,0 +1,54 @@
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+logs/
+
+# Java / Spring
+.gradle/
+build/
+out/
+target/
+*.class
+
+# Node / frontend
+node_modules/
+dist/
+.next/
+.nuxt/
+coverage/
+
+# Python / ai-service
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Docker / local artifacts
+docker-data/
+*.pid
+
+# Secrets / credentials
+*.pem
+*.key
+*.p12
+*.jks
+application-secret.yml
+application-local.yml
+
+# Generated documents
+발표자료/assets/generated/
