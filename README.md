@@ -24,13 +24,9 @@
 | [sungjiduk/seongjiduk-backend](https://github.com/sungjiduk/seongjiduk-backend) | Spring Boot API, LangGraph AI 서비스, Docker/인프라 |
 | [sungjiduk/seongjiduk-frontend](https://github.com/sungjiduk/seongjiduk-frontend) | 사용자/관리자 웹 UI |
 
-## AI/협업 시작점
-👉 작업 전 **[`CLAUDE.md`](./CLAUDE.md)** 를 먼저 읽으세요 (SSOT·작업 규칙). `AGENTS.md`도 동일.
-
 ## 폴더 구조
 ```
 .
-├── CLAUDE.md / AGENTS.md      # AI 인수인계 지침 (SSOT)
 ├── .github/                    # PR/Issue 템플릿, GitHub Actions
 ├── 프로젝트3_요구사항.md       # 요구사항 (불변 기준)
 ├── 기획/                       # 모든 기획 문서 (SSOT 원본)
