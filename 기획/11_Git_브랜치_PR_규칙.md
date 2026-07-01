@@ -54,15 +54,38 @@ infra/docker-compose
 infra/github-actions
 ```
 
-## 커밋 메시지
+## PR 제목 / 커밋 메시지
+
+PR 제목과 커밋 메시지는 같은 형식을 사용한다.
+
+형식:
 
 ```text
-feat: add trip generation API
-fix: handle invalid login token
-docs: update ERD for trip plan
-infra: add docker compose skeleton
-chore: initialize workspace
+[TYPE] 한국어 한 줄 요약
 ```
+
+예시:
+
+```text
+[FEAT] 여행 일정 생성 API 추가
+[FIX] 로그인 토큰 만료 처리 오류 수정
+[DOCS] 여행 일정 ERD 갱신
+[INFRA] Docker Compose 초기 구성 추가
+[CHORE] 프로젝트 초기 설정 정리
+```
+
+사용 타입:
+
+```text
+FEAT / FIX / DOCS / INFRA / CHORE / REFACTOR / TEST / PERF
+```
+
+주의:
+
+- 타입은 대문자로 작성한다.
+- 대괄호를 포함한다.
+- `feat:`, `fix:` 같은 소문자 conventional commit 형식은 사용하지 않는다.
+- 임시 커밋이 필요하면 `[WIP]`를 사용할 수 있지만, PR merge 전에는 정상 타입으로 정리한다.
 
 ## PR 규칙
 

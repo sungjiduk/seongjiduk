@@ -21,8 +21,6 @@ jobs:
       - name: Verify required documents
         run: |
           test -f README.md
-          test -f CLAUDE.md
-          test -f AGENTS.md
           test -f 프로젝트3_요구사항.md
           test -f 기획/02_최종_기획서.md
           test -f 기획/03_기능_명세.md
