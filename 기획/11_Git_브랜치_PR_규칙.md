@@ -2,24 +2,26 @@
 
 ## 레포 전략
 
-성지덕은 front/back 분리 repo로 관리한다.
+성지덕은 기획/프론트엔드/백엔드/AI 서비스 분리 repo로 관리한다.
 
 ```text
 sungjiduk/seongjiduk           기획/문서/발표자료 SSOT
-sungjiduk/seongjiduk-backend   Spring Boot API, LangGraph AI 서비스, 인프라
+sungjiduk/seongjiduk-backend   Spring Boot API, 인프라
+sungjiduk/seongjiduk-ai        LangGraph 기반 AI Agent 서비스
 sungjiduk/seongjiduk-frontend  사용자/관리자 웹 UI
 ```
 
-front/back을 나누는 이유:
+repo를 나누는 이유:
 
 - 프론트와 백엔드 담당자가 독립적으로 작업하기 쉽다.
+- AI Agent는 Python/LangGraph 의존성과 배포 주기가 백엔드와 다르다.
 - 각 repo의 CI를 역할에 맞게 단순화할 수 있다.
 - 기획/ERD/API 명세는 `sungjiduk/seongjiduk`에만 두어 SSOT를 유지한다.
 
 주의:
 
 - API/ERD/기능 변경은 코드 repo PR과 별개로 문서 repo도 함께 갱신해야 한다.
-- 백엔드와 프론트가 충돌하면 `기획/05_API_명세.md`를 기준으로 맞춘다.
+- 백엔드, 프론트, AI 계약이 충돌하면 `기획/05_API_명세.md`와 `기획/06_AI_에이전트_설계.md`를 기준으로 맞춘다.
 
 ## 브랜치 전략
 
@@ -47,6 +49,7 @@ chore/*   설정/잡무 브랜치
 ```text
 feat/auth-signup
 feat/trip-planner
+feat/ai-trip-generate
 feat/admin-dashboard
 fix/login-token-expiry
 docs/api-spec-update

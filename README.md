@@ -16,12 +16,13 @@
 
 ## Repository 구성
 
-성지덕은 front/back 분리 repo로 운영합니다.
+성지덕은 기획, 프론트엔드, 백엔드, AI 서비스를 분리 repo로 운영합니다.
 
 | Repo | 역할 |
 |------|------|
 | [sungjiduk/seongjiduk](https://github.com/sungjiduk/seongjiduk) | 기획/문서/발표자료 SSOT |
-| [sungjiduk/seongjiduk-backend](https://github.com/sungjiduk/seongjiduk-backend) | Spring Boot API, LangGraph AI 서비스, Docker/인프라 |
+| [sungjiduk/seongjiduk-backend](https://github.com/sungjiduk/seongjiduk-backend) | Spring Boot API, Docker/인프라 |
+| [sungjiduk/seongjiduk-ai](https://github.com/sungjiduk/seongjiduk-ai) | LangGraph 기반 AI Agent 서비스 |
 | [sungjiduk/seongjiduk-frontend](https://github.com/sungjiduk/seongjiduk-frontend) | 사용자/관리자 웹 UI |
 
 ## 폴더 구조
