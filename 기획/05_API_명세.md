@@ -150,6 +150,33 @@ Response:
 
 MVP에서는 실제 예약 API를 호출하지 않는다. 검색 키워드 또는 외부 예약 사이트 링크를 제공한다.
 
+## 이벤트 수집 API
+
+접속자/이용 통계(`07_관리자_통계_설계.md`)의 데이터 소스다. 화면·행동 이벤트는 프론트엔드가 이 API로 전송하고, 서버 발생 이벤트(SIGNUP/LOGIN/TRIP_* 등)는 백엔드 서비스 로직에서 직접 기록한다. 수집 대상 이벤트 타입은 07의 "수집 이벤트" 표를 따른다.
+
+| Method | Path | 설명 | 인증 | 기능ID |
+|--------|------|------|------|--------|
+| POST | `/events` | 접속/행동 이벤트 수집 (EVENT-001) | 선택 | F-5 |
+
+### POST `/events`
+
+Request:
+
+```json
+{
+  "eventType": "PAGE_VIEW",
+  "path": "/map",
+  "targetId": 1,
+  "sessionId": "anon-8f3c1a2b"
+}
+```
+
+- `eventType`: 07의 이벤트 타입 (PAGE_VIEW, CONTENT_SELECTED, SPOT_VIEWED 등)
+- `path`, `targetId`, `sessionId`: 선택. 비회원 식별은 `sessionId`(익명 UUID)로 처리
+- 서버가 `userId`(인증 시), `occurredAt`, IP/User-Agent를 채워 `UsageEvent`로 저장한다
+
+Response: `204 No Content`
+
 ## 관리자 API
 
 | Method | Path | 설명 | 인증 | 기능ID |
