@@ -48,4 +48,4 @@
 ```
 
 ## 기술 스택
-Java 25+ · Spring Boot/Security/Data JPA · LangGraph(Python) · PostgreSQL · Docker/Compose · GitHub Actions · 클라우드 1종 · HTTPS
+Java 25+ · Spring Boot/Security/Data JPA · LangGraph(Python) · MySQL · Docker/Compose · GitHub Actions · AWS · HTTPS
