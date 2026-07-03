@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>성지덕 — 탑승 게이트</title>
+    <meta
+      name="description"
+      content="성지덕: 오덕후를 위한 성지순례 기반 AI 여행 플래너. 팀·API·일정·진행률을 하나의 항공 여정으로."
+    />
+
+    <!-- 폰트: 표시체(Space Grotesk), 본문(Pretendard/Inter), 모노(Space Mono) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Space+Mono:wght@400;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css"
+    />
+
+    <link rel="stylesheet" href="assets/css/main.css" />
+  </head>
+  <body data-zone="dawn">
+    <!-- 스크롤에 따라 dawn→mid→altitude→space로 전이하는 배경 -->
+    <div class="sky-backdrop" aria-hidden="true"></div>
+
+    <!-- 히어로 3D 캔버스 (실패/reduced-motion 시 폴백 이미지가 대신) -->
+    <div class="hero-stage" aria-hidden="true">
+      <canvas id="hero-canvas"></canvas>
+      <div class="hero-fallback">
+        <img
+          src="assets/img/duck.png"
+          alt=""
+          class="hero-fallback__duck"
+          width="200"
+          height="200"
+        />
+      </div>
+    </div>
+
+    <a class="skip-link" href="#main">본문으로 건너뛰기</a>
+
+    <header class="topbar">
+      <span class="topbar__brand">성지덕</span>
+      <span class="topbar__flight mono">FLIGHT SJD-2026</span>
+    </header>
+
+    <main id="main">
+      <!-- GATE 01 — 히어로 / 탑승 -->
+      <section class="section section--hero" id="gate" aria-labelledby="gate-title">
+        <div class="section__inner hero-copy">
+          <p class="leg-tag mono">GATE 01 · BOARDING</p>
+          <h1 id="gate-title" class="display hero-title">
+            덕식이의<br />성지순례 탑승구
+          </h1>
+          <p class="hero-lead" data-team-tagline>
+            오덕후를 위한 성지순례 기반 AI 여행 플래너
+          </p>
+          <p class="hero-oneliner" data-team-oneliner></p>
+          <a class="scroll-hint mono" href="#takeoff">스크롤하여 탑승 ↓</a>
+        </div>
+      </section>
+
+      <!-- TAKEOFF — 팀 소개 -->
+      <section class="section" id="takeoff" aria-labelledby="takeoff-title">
+        <div class="section__inner reveal">
+          <p class="leg-tag mono">TAKEOFF · CREW</p>
+          <h2 id="takeoff-title" class="display section-title">크루 소개</h2>
+          <p class="section-desc" data-team-oneliner></p>
+          <ul class="crew-grid" data-crew aria-label="크루 목록"></ul>
+        </div>
+      </section>
+
+      <!-- CRUISE — 자동 진행률 대시보드 -->
+      <section class="section" id="cruise" aria-labelledby="cruise-title">
+        <div class="section__inner reveal">
+          <p class="leg-tag mono">CRUISE · LIVE PROGRESS</p>
+          <h2 id="cruise-title" class="display section-title">탑승 진행률</h2>
+          <p class="section-desc">
+            백엔드 repo의 이슈·PR을 GitHub Actions가 집계해 실시간으로 갱신합니다.
+          </p>
+
+          <div class="progress-overall" data-progress-overall>
+            <div class="gauge" role="img" aria-label="전체 진행률">
+              <svg viewBox="0 0 120 120" class="gauge__svg">
+                <circle class="gauge__track" cx="60" cy="60" r="52" />
+                <circle
+                  class="gauge__fill"
+                  cx="60"
+                  cy="60"
+                  r="52"
+                  data-gauge-fill
+                />
+              </svg>
+              <div class="gauge__label">
+                <span class="gauge__pct mono" data-overall-pct>—</span>
+                <span class="gauge__sub mono" data-overall-frac></span>
+              </div>
+            </div>
+            <p class="progress-updated mono" data-progress-updated></p>
+          </div>
+
+          <ul class="parts" data-parts aria-label="파트별 진행률"></ul>
+
+          <div class="recent">
+            <h3 class="recent__title mono">최근 착륙한 PR</h3>
+            <ul class="recent__list" data-recent aria-label="최근 머지된 PR"></ul>
+          </div>
+        </div>
+      </section>
+
+      <!-- ROUTE — API 명세 = 노선도 -->
+      <section class="section" id="route" aria-labelledby="route-title">
+        <div class="section__inner reveal">
+          <p class="leg-tag mono">ROUTE · API MAP</p>
+          <h2 id="route-title" class="display section-title">노선도 (API 명세)</h2>
+          <p class="section-desc">
+            도메인은 터미널, 엔드포인트는 게이트입니다. 게이트를 눌러 상세를 펼치세요.
+          </p>
+          <p class="route-meta mono" data-route-meta></p>
+          <div class="terminals" data-terminals aria-label="API 터미널 목록"></div>
+        </div>
+      </section>
+
+      <!-- ARRIVAL — 일정 타임라인 + CTA -->
+      <section class="section" id="arrival" aria-labelledby="arrival-title">
+        <div class="section__inner reveal">
+          <p class="leg-tag mono">ARRIVAL · ITINERARY</p>
+          <h2 id="arrival-title" class="display section-title">여정 타임라인</h2>
+          <p class="section-desc">발표(2026-07-10)까지의 보딩 일정입니다.</p>
+          <ol class="timeline" data-timeline aria-label="일정 타임라인"></ol>
+
+          <div class="cta">
+            <a class="cta__btn cta__btn--primary" data-link-github href="#" rel="noopener"
+              >GitHub</a
+            >
+            <a class="cta__btn" data-link-backend href="#" rel="noopener">Backend</a>
+            <a
+              class="cta__btn cta__btn--swagger"
+              data-link-swagger
+              href="#"
+              rel="noopener"
+              hidden
+              >Swagger</a
+            >
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <p class="mono">성지덕 · SEONGJIDUK · 2026 · 항공 여정 쇼케이스</p>
+    </footer>
+
+    <!-- CDN: Three.js + GSAP(ScrollTrigger). 히어로 실패해도 콘텐츠는 렌더됨. -->
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js"
+        }
+      }
+    </script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"
+      defer
+    ></script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"
+      defer
+    ></script>
+    <script type="module" src="assets/js/data.js"></script>
+    <script type="module" src="assets/js/hero.js"></script>
+  </body>
+</html>
