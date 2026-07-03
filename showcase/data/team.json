@@ -1,0 +1,19 @@
+{
+  "project": {
+    "name": "성지덕",
+    "tagline": "오덕후를 위한 성지순례 기반 AI 여행 플래너",
+    "oneLiner": "좋아하는 작품을 고르면 지도에 실제 성지가 뜨고, 기간·예산·스타일에 맞춰 AI가 성지 중심 루트를 짭니다.",
+    "demoContent": "러브라이브! 뮤즈",
+    "links": {
+      "github": "https://github.com/sungjiduk",
+      "backend": "https://github.com/sungjiduk/seongjiduk-backend",
+      "swagger": ""
+    }
+  },
+  "crew": [
+    { "name": "크루 1", "role": "Backend", "gate": "AUTH · TRIP", "line": "인증과 여행 일정 API를 조종합니다." },
+    { "name": "크루 2", "role": "Backend", "gate": "CONTENT · ADMIN", "line": "콘텐츠와 관리자 통계 게이트를 담당합니다." },
+    { "name": "크루 3", "role": "AI", "gate": "AI Agent", "line": "LangGraph로 성지 루트를 생성합니다." },
+    { "name": "크루 4", "role": "Frontend", "gate": "Web UI", "line": "지도와 일정 화면을 만듭니다." }
+  ]
+}
