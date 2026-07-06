@@ -26,6 +26,16 @@ export function createAct3({ camera, duck, clouds, overlay, village, road, bicyc
     if (a && el) overlay.anchor(a, el);
   }
 
+  // 피날레 CTA: 토리이(도로 p 0.95) 위쪽 앵커
+  let finaleAnchor = null;
+  if (panels.FINALE) {
+    const toriiAt = road.at(0.95);
+    finaleAnchor = new THREE.Object3D();
+    finaleAnchor.position.set(toriiAt.pos[0], 3.4, toriiAt.pos[2]);
+    village.group.add(finaleAnchor);
+    overlay.anchor(finaleAnchor, panels.FINALE);
+  }
+
   // 자전거 + 깃발 배치 (깃발은 짐받이 뒤 바깥쪽 — 덕식이와 겹치지 않게)
   bicycle.group.scale.setScalar(1.45);
   flag.group.scale.setScalar(0.6);
@@ -66,8 +76,9 @@ export function createAct3({ camera, duck, clouds, overlay, village, road, bicyc
     active = true;
     if (!entered) enter();
 
-    // 주행 진행도: 정거장 창에서 살짝 느려지는 워프
-    const rideP = THREE.MathUtils.clamp((p - RIDE_START) / (RIDE_END - RIDE_START), 0, 1);
+    // 주행 진행도 — 종점은 토리이(도로 p 0.95) 직전에서 멈춘다
+    const rideP =
+      THREE.MathUtils.clamp((p - RIDE_START) / (RIDE_END - RIDE_START), 0, 1) * 0.93;
 
     const { pos, tangent } = road.at(rideP);
     bicycle.group.position.set(pos[0], pos[1], pos[2]);
@@ -87,6 +98,13 @@ export function createAct3({ camera, duck, clouds, overlay, village, road, bicyc
     camPos.x -= tangent[0] * 1.6;
     camPos.z -= tangent[2] * 1.6;
     look.set(pos[0] + tangent[0] * 3, pos[1] + 1.0, pos[2] + tangent[2] * 3);
+
+    // 피날레 CTA: 종점 접근 시 페이드 인
+    if (panels.FINALE) {
+      const fw = THREE.MathUtils.clamp((rideP - 0.82) / 0.09, 0, 1);
+      panels.FINALE.style.opacity = String(fw);
+      panels.FINALE.style.pointerEvents = fw > 0.5 ? "auto" : "none";
+    }
 
     // 정거장 패널 페이드 + 카메라가 패널 쪽으로 살짝 팬
     for (const st of village.stations) {

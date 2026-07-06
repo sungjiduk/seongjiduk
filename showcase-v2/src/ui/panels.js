@@ -193,3 +193,18 @@ export function buildStationPanels({ schedule, progress, apiSpec, troubleshootin
 
   return panels;
 }
+
+/** 피날레(토리이 도착) CTA 패널 */
+export function buildFinalePanel(links = {}) {
+  return el(`
+    <section class="station-panel station-panel--finale">
+      <p class="station-panel__tag mono">DESTINATION · 성지 마을</p>
+      <h2 class="station-panel__title">도착했습니다 🛬</h2>
+      <p class="station-panel__desc">덕식이의 성지순례에 탑승해 주셔서 감사합니다.</p>
+      <p class="deck-card__links">
+        ${links.github ? `<a href="${escapeHtml(links.github)}" rel="noopener" target="_blank">GitHub</a>` : ""}
+        ${links.backend ? `<a href="${escapeHtml(links.backend)}" rel="noopener" target="_blank">Backend</a>` : ""}
+        ${links.swagger ? `<a href="${escapeHtml(links.swagger)}" rel="noopener" target="_blank">Swagger</a>` : ""}
+      </p>
+    </section>`);
+}

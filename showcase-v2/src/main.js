@@ -19,7 +19,12 @@ import { createRoad } from "./core/path.js";
 import { createBicycle } from "./scenes/bicycle.js";
 import { createFlag } from "./scenes/flag.js";
 import { createOverlay } from "./ui/overlay.js";
-import { buildDeckCards, buildStationPanels, loadJSON } from "./ui/panels.js";
+import {
+  buildDeckCards,
+  buildStationPanels,
+  buildFinalePanel,
+  loadJSON,
+} from "./ui/panels.js";
 import { createLoading } from "./ui/loading.js";
 import { createSound } from "./ui/sound.js";
 
@@ -195,6 +200,7 @@ async function boot() {
       apiSpec: apiRes,
       troubleshooting: tsRes,
     });
+    stationPanels.FINALE = buildFinalePanel(teamRes?.project?.links);
     act3 = createAct3({
       camera,
       duck,
