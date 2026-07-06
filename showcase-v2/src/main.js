@@ -316,6 +316,11 @@ async function boot() {
   // --- 스크롤 배선: GSAP ScrollTrigger 스크럽 ---
   const state = { t: 0 };
   let scrollTarget = 0;
+  // 여정 진행 바 (하단 고정, 현재 위치 감각 제공)
+  const jbar = document.createElement("div");
+  jbar.id = "journey-bar";
+  jbar.setAttribute("aria-hidden", "true");
+  document.body.appendChild(jbar);
   const sunnyHaze = new THREE.Color("#f2dfc8"); // 맑은 석양 지평선 헤이즈
   let lastAct = "skydive";
   function updateFromScroll(t) {
@@ -348,6 +353,7 @@ async function boot() {
     lastAct = act;
     document.body.dataset.act = act;
     sound.setAct(act);
+    jbar.style.width = `${(t * 100).toFixed(2)}%`;
   }
 
   if (!prefersReduced) {

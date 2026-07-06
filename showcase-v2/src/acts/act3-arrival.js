@@ -109,7 +109,9 @@ export function createAct3({ camera, duck, clouds, overlay, village, road, bicyc
 
     // 피날레 CTA: 종점 접근 시 페이드 인
     if (panels.FINALE) {
-      const fw = THREE.MathUtils.clamp((rideP - 0.82) / 0.09, 0, 1);
+      const fw =
+        THREE.MathUtils.clamp((rideP - 0.7) / 0.08, 0, 1) *
+        (1 - segment(p, 0.885, 0.92)); // 도착 직후 떠서, 비행기 픽업 전에 사라짐
       panels.FINALE.style.opacity = String(fw);
       panels.FINALE.style.pointerEvents = fw > 0.5 ? "auto" : "none";
     }
@@ -164,6 +166,10 @@ export function createAct3({ camera, duck, clouds, overlay, village, road, bicyc
     if (!active) return;
     flag.update(dt);
     if (plane.group.visible) plane.propeller.rotation.z += dt * 26;
+    // 페달링 느낌: 안장 위 미세 바운스 (정적 메시 보완)
+    if (duck.group.visible && entered) {
+      duck.group.position.y = 0.05 + Math.abs(Math.sin(performance.now() * 0.008)) * 0.045;
+    }
     // 부드러운 팔로우: 목표 지점으로 감쇠 추적 (프레임 경합 방지 겸)
     const k = 1 - Math.pow(0.002, dt); // dt 독립 감쇠
     camera.position.lerp(camPos, k);
