@@ -5,6 +5,10 @@
 import "./styles/main.css";
 import "./styles/stations.css";
 import * as THREE from "three";
+import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
+import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
+import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
+import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { segment, actProgress, ACTS } from "./core/timeline.js";
@@ -112,6 +116,8 @@ export function initScene() {
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.05;
+  renderer.shadowMap.enabled = !isSmall; // 모바일은 그림자 생략(성능)
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(
@@ -126,7 +132,15 @@ export function initScene() {
   // 라이팅: 석양 키 + 하늘/지면 헤미 (마을·덕식이 공용 베이스)
   scene.add(new THREE.HemisphereLight(0xbfd9ff, 0x3a2c22, 0.7));
   const key = new THREE.DirectionalLight(0xffd9a0, 1.3);
-  key.position.set(4, 6, 3);
+  key.position.set(24, 36, 18);
+  key.castShadow = !isSmall;
+  key.shadow.mapSize.set(2048, 2048);
+  key.shadow.camera.left = -50;
+  key.shadow.camera.right = 50;
+  key.shadow.camera.top = 60;
+  key.shadow.camera.bottom = -60;
+  key.shadow.camera.far = 120;
+  key.shadow.bias = -0.0006;
   scene.add(key);
   const rim = new THREE.DirectionalLight(0x9ec7ff, 0.5);
   rim.position.set(-5, 2, -4);
@@ -140,10 +154,26 @@ export function initScene() {
     return () => callbacks.delete(cb);
   }
 
+  // 포스트 프로세싱: 은은한 블룸 (모바일은 성능 위해 생략)
+  let composer = null;
+  if (!isSmall) {
+    composer = new EffectComposer(renderer);
+    composer.addPass(new RenderPass(scene, camera));
+    const bloom = new UnrealBloomPass(
+      new THREE.Vector2(window.innerWidth, window.innerHeight),
+      0.22, // strength — 창문·석양 하이라이트만 살짝
+      0.55, // radius
+      0.85 // threshold
+    );
+    composer.addPass(bloom);
+    composer.addPass(new OutputPass());
+  }
+
   const timer = new THREE.Timer();
   let raf = 0;
   function renderOnce() {
-    renderer.render(scene, camera);
+    if (composer) composer.render();
+    else renderer.render(scene, camera);
   }
   function animate() {
     raf = requestAnimationFrame(animate);
@@ -151,7 +181,7 @@ export function initScene() {
     // 탭 전환/스로틀 복귀 시 dt 스파이크가 이동 로직을 폭주시키지 않도록 클램프
     const dt = Math.min(timer.getDelta(), 0.05);
     for (const cb of callbacks) cb(dt, timer.getElapsed());
-    renderer.render(scene, camera);
+    renderOnce();
   }
 
   if (prefersReduced) {
@@ -169,6 +199,7 @@ export function initScene() {
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
     renderer.setSize(window.innerWidth, window.innerHeight);
+    composer?.setSize(window.innerWidth, window.innerHeight);
     if (prefersReduced) renderOnce();
   });
 
@@ -238,6 +269,19 @@ async function boot() {
       flag: createFlag(),
       panels: stationPanels,
     });
+
+    // 그림자 플래그 (자전거·깃발은 village.group 자식이라 함께 순회됨)
+    if (!isSmall) {
+      duck.group.traverse((o) => {
+        if (o.isMesh) o.castShadow = true;
+      });
+      village.group.traverse((o) => {
+        if (o.isMesh || o.isInstancedMesh) {
+          o.castShadow = true;
+          o.receiveShadow = true;
+        }
+      });
+    }
   } catch (err) {
     return useFallback(err);
   }

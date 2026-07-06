@@ -123,9 +123,7 @@ export function createAct3({ camera, duck, clouds, overlay, village, road, bicyc
       }
     }
 
-    camera.position.copy(camPos);
-    camera.up.copy(up);
-    camera.lookAt(look);
+    // 카메라 적용은 tickFrame의 감쇠 추적이 담당 (스크롤 스냅 방지)
   }
 
   function leave() {
@@ -140,8 +138,9 @@ export function createAct3({ camera, duck, clouds, overlay, village, road, bicyc
   function tickFrame(dt) {
     if (!active) return;
     flag.update(dt);
-    // 프레임 우선순위 경합 방지: 활성 동안 카메라를 매 프레임 재적용
-    camera.position.copy(camPos);
+    // 부드러운 팔로우: 목표 지점으로 감쇠 추적 (프레임 경합 방지 겸)
+    const k = 1 - Math.pow(0.002, dt); // dt 독립 감쇠
+    camera.position.lerp(camPos, k);
     camera.up.copy(up);
     camera.lookAt(look);
   }
