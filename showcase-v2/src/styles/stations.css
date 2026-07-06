@@ -1,0 +1,217 @@
+/* ACT3 정거장 패널 — 도로변 도킹 DOM (main.css 토큰 사용) */
+
+.station-panel {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: min(400px, 44vw);
+  max-height: 62vh;
+  overflow-y: auto;
+  background: var(--paper);
+  border: 1px solid var(--paper-border);
+  border-radius: 16px;
+  box-shadow: var(--shadow);
+  padding: 1.1rem 1.25rem;
+  pointer-events: auto;
+  opacity: 0;
+  transition: opacity 0.25s ease;
+}
+.station-panel--wide {
+  width: min(520px, 52vw);
+}
+.station-panel__tag {
+  font-size: 0.66rem;
+  color: var(--coral);
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  margin: 0 0 0.35rem;
+}
+.station-panel__title {
+  font-family: var(--font-display);
+  font-size: 1.35rem;
+  margin: 0 0 0.4rem;
+  color: var(--ink);
+}
+.station-panel__desc {
+  font-size: 0.82rem;
+  color: var(--ink-dim);
+  margin: 0 0 0.8rem;
+}
+
+/* PLAN */
+.station-panel__legs {
+  list-style: none;
+  padding: 0;
+  margin: 0.4rem 0 0;
+  display: grid;
+  gap: 0.45rem;
+}
+.station-panel__legs li {
+  font-size: 0.82rem;
+  background: var(--paper-soft);
+  border: 1px solid var(--paper-border);
+  border-radius: 9px;
+  padding: 0.5rem 0.7rem;
+}
+.station-panel__legs li span {
+  color: var(--coral);
+  font-weight: 700;
+  font-size: 0.74rem;
+  margin-right: 0.4rem;
+}
+.station-panel__legs li em {
+  font-style: normal;
+  font-size: 0.66rem;
+  color: var(--ink-dim);
+  margin-left: 0.35rem;
+}
+.station-panel__legs li.is-done {
+  border-color: color-mix(in srgb, var(--duck) 45%, var(--paper-border));
+}
+.station-panel__legs li.is-today {
+  outline: 2px solid var(--coral);
+}
+.station-panel__legs li.is-today em {
+  color: var(--coral);
+  font-weight: 700;
+}
+
+/* PROGRESS */
+.station-panel__parts {
+  list-style: none;
+  padding: 0;
+  margin: 0.3rem 0 0;
+  display: grid;
+  gap: 0.4rem;
+}
+.station-panel__parts li {
+  display: grid;
+  grid-template-columns: 58px 1fr auto;
+  gap: 0.15rem 0.6rem;
+  align-items: center;
+  font-size: 0.8rem;
+  background: var(--paper-soft);
+  border: 1px solid var(--paper-border);
+  border-radius: 9px;
+  padding: 0.45rem 0.65rem;
+}
+.part-code {
+  color: var(--coral);
+  font-weight: 700;
+  font-size: 0.68rem;
+}
+.part-frac {
+  color: var(--ink-dim);
+  font-size: 0.72rem;
+}
+.part-bar {
+  grid-column: 1 / -1;
+  height: 6px;
+  border-radius: 999px;
+  background: #e4ecf6;
+  overflow: hidden;
+}
+.part-bar > i {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, #ffc24b, var(--coral));
+  border-radius: inherit;
+}
+
+/* API */
+.station-panel__terminals {
+  display: grid;
+  gap: 0.7rem;
+}
+.terminal-mini {
+  background: var(--paper-soft);
+  border: 1px solid var(--paper-border);
+  border-radius: 10px;
+  padding: 0.6rem 0.75rem;
+}
+.terminal-mini__head {
+  font-weight: 700;
+  font-size: 0.86rem;
+  margin: 0 0 0.4rem;
+}
+.terminal-mini__head span {
+  color: var(--coral);
+  font-size: 0.7rem;
+  margin-right: 0.3rem;
+}
+.gate-mini {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  font-size: 0.72rem;
+  margin: 0.22rem 0;
+}
+.gate-mini__path {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.gate-mini__auth {
+  font-size: 0.62rem;
+  color: var(--ink-dim);
+  border: 1px solid var(--paper-border);
+  border-radius: 4px;
+  padding: 0 0.3rem;
+}
+.method-chip {
+  flex: 0 0 auto;
+  min-width: 50px;
+  text-align: center;
+  font-weight: 700;
+  font-size: 0.62rem;
+  border-radius: 4px;
+  color: #fff;
+  padding: 0.08rem 0.3rem;
+}
+.m-get { background: #2f7fd4; }
+.m-post { background: #1f9e6d; }
+.m-patch { background: #d98b00; }
+.m-delete { background: #e8395f; }
+
+/* TS */
+.station-panel__ts {
+  list-style: none;
+  padding: 0;
+  margin: 0.3rem 0 0;
+  display: grid;
+  gap: 0.5rem;
+}
+.station-panel__ts li {
+  background: var(--paper-soft);
+  border: 1px dashed var(--paper-border);
+  border-radius: 10px;
+  padding: 0.55rem 0.75rem;
+}
+.ts-head {
+  font-size: 0.8rem;
+  margin: 0 0 0.2rem;
+}
+.ts-head span {
+  color: var(--coral);
+  font-size: 0.68rem;
+  font-weight: 700;
+  margin-right: 0.3rem;
+}
+.ts-part {
+  color: var(--ink-dim);
+  font-size: 0.62rem;
+}
+.ts-body {
+  font-size: 0.74rem;
+  color: var(--ink-dim);
+  margin: 0;
+}
+
+@media (max-width: 640px) {
+  .station-panel,
+  .station-panel--wide {
+    width: min(320px, 88vw);
+    max-height: 52vh;
+  }
+}

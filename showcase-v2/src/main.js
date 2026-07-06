@@ -3,6 +3,7 @@
 // WebGL 불가/생성 실패 시 항상 DOM 문서 모드로 폴백해 콘텐츠 접근성을 보장한다.
 
 import "./styles/main.css";
+import "./styles/stations.css";
 import * as THREE from "three";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
@@ -12,8 +13,13 @@ import { createClouds } from "./scenes/clouds.js";
 import { loadDuck } from "./scenes/duck.js";
 import { createAct1 } from "./acts/act1-skydive.js";
 import { createAct2 } from "./acts/act2-deck.js";
+import { createAct3 } from "./acts/act3-arrival.js";
+import { buildVillage } from "./scenes/village.js";
+import { createRoad } from "./core/path.js";
+import { createBicycle } from "./scenes/bicycle.js";
+import { createFlag } from "./scenes/flag.js";
 import { createOverlay } from "./ui/overlay.js";
-import { buildDeckCards, loadJSON } from "./ui/panels.js";
+import { buildDeckCards, buildStationPanels, loadJSON } from "./ui/panels.js";
 import { createLoading } from "./ui/loading.js";
 import { createSound } from "./ui/sound.js";
 
@@ -159,13 +165,18 @@ async function boot() {
   let duck = null;
   let act1 = null;
   let act2 = null;
+  let act3 = null;
   const overlay = createOverlay(camera);
   try {
-    const [duckLoaded, teamRes, progressRes] = await Promise.all([
-      loadDuck(loading.manager),
-      loadJSON("data/team.json").catch(() => null),
-      loadJSON("data/progress.json").catch(() => null),
-    ]);
+    const [duckLoaded, teamRes, progressRes, scheduleRes, apiRes, tsRes] =
+      await Promise.all([
+        loadDuck(loading.manager),
+        loadJSON("data/team.json").catch(() => null),
+        loadJSON("data/progress.json").catch(() => null),
+        loadJSON("data/schedule.json").catch(() => null),
+        loadJSON("data/api-spec.json").catch(() => null),
+        loadJSON("data/troubleshooting.json").catch(() => null),
+      ]);
     duck = duckLoaded;
     duck.setPose("skydive");
     scene.add(duck.group);
@@ -173,6 +184,28 @@ async function boot() {
     const cards = buildDeckCards({ team: teamRes, progress: progressRes });
     act2 = createAct2({ camera, duck, clouds, overlay, cards });
     scene.add(act2.group);
+
+    // ACT3: 마을 + 도로 + 자전거 + 깃발 + 정거장 패널
+    const village = buildVillage(scene);
+    const road = createRoad(village.roadPoints);
+    road.length = road.curve.getLength();
+    const stationPanels = buildStationPanels({
+      schedule: scheduleRes,
+      progress: progressRes,
+      apiSpec: apiRes,
+      troubleshooting: tsRes,
+    });
+    act3 = createAct3({
+      camera,
+      duck,
+      clouds,
+      overlay,
+      village,
+      road,
+      bicycle: createBicycle(),
+      flag: createFlag(),
+      panels: stationPanels,
+    });
   } catch (err) {
     return useFallback(err);
   }
@@ -182,6 +215,7 @@ async function boot() {
     clouds.update(dt);
     act1?.tickFrame(dt, elapsed);
     act2?.tickFrame(dt, elapsed);
+    act3?.tickFrame(dt, elapsed);
     overlay.update();
   });
 
@@ -202,16 +236,10 @@ async function boot() {
       segment(t, ACTS.arrival[0], 0.63) * (1 - segment(t, 0.66, 0.8))
     );
 
-    if (act === "skydive") {
-      if (lastAct === "deck") act2?.leave(act);
-      act1?.update(p);
-    } else if (act === "deck") {
-      if (lastAct === "skydive") act1?.leave();
-      act2?.update(p);
-    } else {
-      // arrival — 카메라·연출은 Task 5~6에서 담당
-      if (lastAct === "deck") act2?.leave(act);
-    }
+    // 막 전환은 인접 이동뿐 아니라 점프(빠른 스크롤/앵커)도 가능 — 이전 막을 항상 정리
+    const actsMap = { skydive: act1, deck: act2, arrival: act3 };
+    if (act !== lastAct) actsMap[lastAct]?.leave?.(act);
+    actsMap[act]?.update(p);
     lastAct = act;
     document.body.dataset.act = act;
     sound.setAct(act);
@@ -251,7 +279,7 @@ async function boot() {
   });
 
   // 디버그/프리뷰 검증용 핸들 (앱 로직은 의존하지 않음)
-  window.__sjd = { ...ctx, sky, clouds, duck, act1, act2, overlay, state, updateFromScroll };
+  window.__sjd = { ...ctx, sky, clouds, duck, act1, act2, act3, overlay, state, updateFromScroll };
 }
 
 boot();

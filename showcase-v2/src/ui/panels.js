@@ -81,3 +81,115 @@ export function buildDeckCards({ team, progress }) {
 
   return cards;
 }
+
+/* ---------- ACT3 정거장 패널 4종 ---------- */
+
+const METHOD_COLORS = { GET: "m-get", POST: "m-post", PATCH: "m-patch", DELETE: "m-delete" };
+
+/** 정거장 패널: { PLAN, PROGRESS, API, TS } — 각각 .station-panel 요소 */
+export function buildStationPanels({ schedule, progress, apiSpec, troubleshooting }) {
+  const panels = {};
+
+  // PLAN — 일정 타임라인
+  const today = new Date().toISOString().slice(0, 10);
+  const legs = schedule?.legs ?? [];
+  panels.PLAN = el(`
+    <section class="station-panel">
+      <p class="station-panel__tag mono">STATION 01 · PLAN</p>
+      <h2 class="station-panel__title">여정 타임라인</h2>
+      <ol class="station-panel__legs">
+        ${legs
+          .map((leg, i) => {
+            const next = legs[i + 1]?.date;
+            const isToday = leg.date <= today && (!next || today < next);
+            const status = leg.done ? "완료" : isToday ? "진행 중" : "예정";
+            const cls = leg.done ? "is-done" : isToday ? "is-today" : "";
+            return `<li class="${cls}"><span class="mono">${escapeHtml(
+              leg.range || leg.date
+            )}</span> ${escapeHtml(leg.label)} <em class="mono">${status}</em></li>`;
+          })
+          .join("")}
+      </ol>
+    </section>`);
+
+  // PROGRESS — 전체 게이지 + 파트별
+  const ov = progress?.overall;
+  panels.PROGRESS = el(`
+    <section class="station-panel">
+      <p class="station-panel__tag mono">STATION 02 · LIVE PROGRESS</p>
+      <h2 class="station-panel__title">탑승 진행률 ${ov ? `${ov.percent}%` : "—"}</h2>
+      <p class="station-panel__desc">API 명세 전체 ${ov?.total ?? "?"}개 엔드포인트 기준 ${
+    ov?.done ?? "?"
+  }개 착륙</p>
+      <ul class="station-panel__parts">
+        ${(progress?.parts ?? [])
+          .map(
+            (pt) => `
+          <li>
+            <span class="mono part-code">${escapeHtml(pt.code)}</span>
+            <span class="part-name">${escapeHtml(pt.name)}</span>
+            <span class="mono part-frac">${pt.done}/${pt.total}</span>
+            <span class="part-bar"><i style="width:${pt.percent}%"></i></span>
+          </li>`
+          )
+          .join("")}
+      </ul>
+    </section>`);
+
+  // API — 노선도 (터미널·게이트 요약)
+  const terminals = apiSpec?.terminals ?? [];
+  const totalGates = terminals.reduce((n, t) => n + (t.endpoints?.length || 0), 0);
+  panels.API = el(`
+    <section class="station-panel station-panel--wide">
+      <p class="station-panel__tag mono">STATION 03 · API MAP</p>
+      <h2 class="station-panel__title">노선도 — ${totalGates} GATES</h2>
+      <div class="station-panel__terminals">
+        ${terminals
+          .map(
+            (t) => `
+          <div class="terminal-mini">
+            <p class="terminal-mini__head"><span class="mono">${escapeHtml(
+              t.code
+            )}</span> ${escapeHtml(t.domain)}</p>
+            ${(t.endpoints ?? [])
+              .map(
+                (e) => `
+              <p class="gate-mini mono">
+                <span class="method-chip ${METHOD_COLORS[e.method] || ""}">${escapeHtml(
+                  e.method
+                )}</span>
+                <span class="gate-mini__path">${escapeHtml(e.path)}</span>
+                <span class="gate-mini__auth">${escapeHtml(e.auth || "-")}</span>
+              </p>`
+              )
+              .join("")}
+          </div>`
+          )
+          .join("")}
+      </div>
+    </section>`);
+
+  // TS — 트러블슈팅 로그
+  panels.TS = el(`
+    <section class="station-panel station-panel--wide">
+      <p class="station-panel__tag mono">STATION 04 · FLIGHT LOG</p>
+      <h2 class="station-panel__title">트러블슈팅 기록</h2>
+      <ul class="station-panel__ts">
+        ${(troubleshooting?.items ?? [])
+          .map(
+            (it) => `
+          <li>
+            <p class="ts-head"><span class="mono">${escapeHtml(it.date)}</span> <b>${escapeHtml(
+              it.title
+            )}</b> <span class="mono ts-part">${escapeHtml(it.part || "")}</span></p>
+            <p class="ts-body"><b>증상</b> ${escapeHtml(it.symptom)} · <b>해결</b> ${escapeHtml(
+              it.fix
+            )}</p>
+          </li>`
+          )
+          .join("")}
+      </ul>
+    </section>`);
+
+  return panels;
+}
