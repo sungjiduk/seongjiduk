@@ -263,3 +263,28 @@
   pointer-events: none;
 }
 html.no-webgl #journey-bar { display: none; }
+
+/* 트러블슈팅 헤더 + 기록 추가 버튼 */
+.station-panel__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+.ts-add {
+  flex: 0 0 auto;
+  margin-top: 0.2rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #fff;
+  background: var(--coral);
+  border-radius: 999px;
+  padding: 0.4rem 0.8rem;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: transform 0.12s ease, filter 0.12s ease;
+}
+.ts-add:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.05);
+}

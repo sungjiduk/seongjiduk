@@ -1,0 +1,57 @@
+name: 🛠 트러블슈팅 기록
+description: 막혔다 푼 문제를 기록합니다. 제출하면 쇼케이스 트러블슈팅 로그에 자동 반영됩니다.
+title: "[TS] "
+labels: ["troubleshooting"]
+body:
+  - type: input
+    id: date
+    attributes:
+      label: 날짜
+      description: YYYY-MM-DD
+      placeholder: "2026-07-07"
+    validations:
+      required: true
+  - type: dropdown
+    id: part
+    attributes:
+      label: 파트
+      options:
+        - BACKEND
+        - AI
+        - SHOWCASE
+        - INFRA
+        - FRONTEND
+    validations:
+      required: true
+  - type: input
+    id: title
+    attributes:
+      label: 제목
+      placeholder: "한 줄 요약"
+    validations:
+      required: true
+  - type: textarea
+    id: symptom
+    attributes:
+      label: 증상
+      placeholder: "어떤 에러/현상이 있었나"
+    validations:
+      required: true
+  - type: textarea
+    id: cause
+    attributes:
+      label: 원인
+    validations:
+      required: true
+  - type: textarea
+    id: fix
+    attributes:
+      label: 해결
+    validations:
+      required: true
+  - type: textarea
+    id: lesson
+    attributes:
+      label: 배운 점 / 재발 방지
+    validations:
+      required: false
