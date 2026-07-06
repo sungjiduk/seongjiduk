@@ -101,17 +101,17 @@ export function createAct3({ camera, duck, clouds, overlay, village, road, bicyc
 
     // 카메라: 뒤따라오는 팔로우 (도로 뒤 + 위)
     const back = road.at(Math.max(0, rideP - 0.045));
-    camPos.set(back.pos[0], back.pos[1] + 2.6, back.pos[2]);
+    camPos.set(back.pos[0], back.pos[1] + 3.4, back.pos[2]); // 마치야 지붕 높이 위로
     // 진행 방향 반대쪽으로 살짝 당겨 어깨 너머 구도
     camPos.x -= tangent[0] * 1.6;
     camPos.z -= tangent[2] * 1.6;
-    look.set(pos[0] + tangent[0] * 3, pos[1] + 1.0, pos[2] + tangent[2] * 3);
+    look.set(pos[0] + tangent[0] * 3, pos[1] + 1.15, pos[2] + tangent[2] * 3);
 
     // 피날레 CTA: 종점 접근 시 페이드 인
     if (panels.FINALE) {
       const fw =
-        THREE.MathUtils.clamp((rideP - 0.7) / 0.08, 0, 1) *
-        (1 - segment(p, 0.86, 0.895)); // 픽업 비행기 등장(0.90) 전에 완전히 사라짐
+        THREE.MathUtils.clamp((rideP - 0.9) / 0.03, 0, 1) *
+        (1 - segment(p, 0.968, 0.985)); // TS 정거장 통과 후 토리이 도착 시점에만
       panels.FINALE.style.opacity = String(fw);
       panels.FINALE.style.pointerEvents = fw > 0.5 ? "auto" : "none";
     }
@@ -134,8 +134,8 @@ export function createAct3({ camera, duck, clouds, overlay, village, road, bicyc
     }
 
     // 피날레 루프: 비행기 하강(0.90~0.95) → 탑승(0.945, 덕식이 숨김) → 상승 → 화이트아웃(0.962~1)
-    const pick = segment(p, 0.9, 0.95);
-    const climb = segment(p, 0.95, 1);
+    const pick = segment(p, 0.955, 0.985);
+    const climb = segment(p, 0.985, 1);
     plane.group.visible = pick > 0;
     if (plane.group.visible) {
       plane.group.position.set(
@@ -145,8 +145,8 @@ export function createAct3({ camera, duck, clouds, overlay, village, road, bicyc
       );
       plane.group.rotation.x = -0.35 * climb; // 상승 피치
     }
-    duck.group.visible = p < 0.945; // 탑승 순간 자전거에서 비행기로
-    if (p > 0.94) clouds.whiteout(segment(p, 0.962, 0.995)); // 상승하며 구름 속으로
+    duck.group.visible = p < 0.982; // 탑승 순간 자전거에서 비행기로
+    if (p > 0.97) clouds.whiteout(segment(p, 0.985, 0.999)); // 상승하며 구름 속으로
 
     // 카메라 적용은 tickFrame의 감쇠 추적이 담당 (스크롤 스냅 방지)
   }
