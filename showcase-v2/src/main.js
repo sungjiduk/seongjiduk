@@ -116,7 +116,7 @@ export function initScene() {
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, isSmall ? 1.5 : 2)); // DPR cap
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.12;
+  renderer.toneMappingExposure = 1.02;
   renderer.shadowMap.enabled = !isSmall; // 모바일은 그림자 생략(성능)
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
@@ -134,6 +134,7 @@ export function initScene() {
   // 덕식이 쪽 envMapIntensity 0.8은 duck.js가 유지한다.
   const pmrem = new THREE.PMREMGenerator(renderer);
   scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+  scene.environmentIntensity = 0.35; // 워시아웃 방지 — 은은한 반사만
   pmrem.dispose();
 
   // 라이팅: 석양 키 + 하늘/지면 헤미 (마을·덕식이 공용 베이스)
@@ -168,9 +169,9 @@ export function initScene() {
     composer.addPass(new RenderPass(scene, camera));
     const bloom = new UnrealBloomPass(
       new THREE.Vector2(window.innerWidth, window.innerHeight),
-      0.3, // strength — 창문·석양 하이라이트만 살짝
+      0.16, // strength — 창문·석양 하이라이트만 살짝
       0.55, // radius
-      0.85 // threshold
+      0.9 // threshold
     );
     composer.addPass(bloom);
     composer.addPass(new OutputPass());
@@ -295,6 +296,10 @@ async function boot() {
   }
 
   tick((dt, elapsed) => {
+    // 스크롤 감쇠 보간: 휠 스텝을 매 프레임 부드럽게 따라감 (턱턱 끊김 제거)
+    if (!prefersReduced && Math.abs(scrollTarget - state.t) > 0.00005) {
+      updateFromScroll(state.t + (scrollTarget - state.t) * Math.min(1, dt * 3.2));
+    }
     sky.update(dt);
     clouds.update(dt);
     act1?.tickFrame(dt, elapsed);
@@ -305,6 +310,7 @@ async function boot() {
 
   // --- 스크롤 배선: GSAP ScrollTrigger 스크럽 ---
   const state = { t: 0 };
+  let scrollTarget = 0;
   const sunnyHaze = new THREE.Color("#f2dfc8"); // 맑은 석양 지평선 헤이즈
   let lastAct = "skydive";
   function updateFromScroll(t) {
@@ -345,9 +351,9 @@ async function boot() {
       trigger: "#scroll-space",
       start: "top top",
       end: "bottom bottom",
-      scrub: 2.2, // 관성 있는 따라잡기 — 휠을 놓아도 부드럽게 이어짐
+      scrub: true, // 관성 있는 따라잡기 — 휠을 놓아도 부드럽게 이어짐
       invalidateOnRefresh: true,
-      onUpdate: (self) => updateFromScroll(self.progress),
+      onUpdate: (self) => { scrollTarget = self.progress; },
     });
     // 비동기 DOM 높이 변화(패널 렌더 등) → 스크롤 범위 재측정 (v1 교훈)
     const refresh = () => ScrollTrigger.refresh();

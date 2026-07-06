@@ -102,16 +102,17 @@ export function createAct1({ camera, duck, clouds }) {
     const fy = -smooth.y * 0.6 + Math.sin(elapsed * 1.1) * 0.12;
     // 탑승 목표: 비행기(분리 전엔 현재 위치, 분리 후엔 분리 시점 위치) 문가에 매달림
     planePose(Math.min(p, DETACH), carryPos);
-    carryPos.x += 0.25;
-    carryPos.y -= 1.9;
-    carryPos.z += 0.5;
+    carryPos.x += 0.1; // 기체 등(동체 위)에 앉은 오프닝
+    carryPos.y += 0.85;
+    carryPos.z -= 0.1;
     g.position.set(
       THREE.MathUtils.lerp(carryPos.x, fx, drop),
       THREE.MathUtils.lerp(carryPos.y, fy, drop),
       THREE.MathUtils.lerp(carryPos.z, 0, drop)
     );
-    // 뱅크(롤)는 자유낙하에서만
+    // 뱅크(롤)는 자유낙하에서만 + 점프 직후 360° 스핀(p의 순수 함수, 역방향 복원)
     g.rotation.z = (-smooth.x * 0.55 + Math.sin(elapsed * 0.7) * 0.05) * drop;
+    g.rotation.y = segment(p, DETACH, DROP_END + 0.08) * Math.PI * 2;
 
     // 낙하산 전개 후: 직립으로 세워지고 캐노피가 팝(스케일 스프링)
     const deployed = duck.parachute?.visible;
