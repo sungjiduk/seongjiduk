@@ -17,12 +17,13 @@
 
 ## 인증 API
 
-| Method | Path | 설명 | 인증 | 기능ID |
-|--------|------|------|------|--------|
-| POST | `/auth/signup` | 회원가입 | X | F-1 |
-| POST | `/auth/login` | 로그인 | X | F-1 |
-| POST | `/auth/logout` | 로그아웃 | USER | F-1 |
-| GET | `/auth/me` | 내 정보 조회 | USER | F-1 |
+| Method | Path            | 설명              | 인증   | 기능ID |
+|--------|-----------------|-----------------|------|--------|
+| POST | `/auth/signup`  | 회원가입            | X    | F-1 |
+| POST | `/auth/login`   | 로그인             | X    | F-1 |
+| POST | `/auth/logout`  | 로그아웃            | USER | F-1 |
+| GET | `/auth/me`      | 내 정보 조회         | USER | F-1 |
+| POST | `/auth/refresh` | AccessToken 재발급 | X    | F-1 |
 
 ### POST `/auth/signup`
 
