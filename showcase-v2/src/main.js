@@ -15,6 +15,7 @@ import { createAct2 } from "./acts/act2-deck.js";
 import { createOverlay } from "./ui/overlay.js";
 import { buildDeckCards, loadJSON } from "./ui/panels.js";
 import { createLoading } from "./ui/loading.js";
+import { createSound } from "./ui/sound.js";
 
 export const prefersReduced = window.matchMedia(
   "(prefers-reduced-motion: reduce)"
@@ -141,6 +142,7 @@ async function boot() {
   if (!hasWebGL()) return useFallback("no-webgl");
 
   const loading = createLoading();
+  const sound = createSound();
   const ctx = initScene();
   if (!ctx) return; // initScene이 폴백 처리 완료
 
@@ -212,6 +214,7 @@ async function boot() {
     }
     lastAct = act;
     document.body.dataset.act = act;
+    sound.setAct(act);
   }
 
   if (!prefersReduced) {

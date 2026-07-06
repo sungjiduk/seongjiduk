@@ -135,6 +135,15 @@ html.scene-ready #scene-canvas {
   opacity: 0.55;
   cursor: default;
 }
+#sound-toggle:not(:disabled):hover {
+  color: var(--ink);
+  border-color: var(--duck-soft);
+}
+#sound-toggle[aria-pressed="true"] {
+  color: var(--ink);
+  border-color: var(--duck);
+  box-shadow: 0 0 0 3px rgba(245, 168, 12, 0.22), var(--shadow);
+}
 
 #scroll-hint {
   position: fixed;
