@@ -297,6 +297,7 @@ async function boot() {
 
   // --- 스크롤 배선: GSAP ScrollTrigger 스크럽 ---
   const state = { t: 0 };
+  const sunnyHaze = new THREE.Color("#f2dfc8"); // 맑은 석양 지평선 헤이즈
   let lastAct = "skydive";
   function updateFromScroll(t) {
     state.t = t;
@@ -311,6 +312,15 @@ async function boot() {
     clouds.whiteout(
       segment(t, ACTS.arrival[0], 0.63) * (1 - segment(t, 0.66, 0.8))
     );
+    // 구름 아래는 맑음: 화이트아웃이 걷히면 포그를 멀리 밀어 마을이 쨍하게
+    if (scene.fog) {
+      const sunny = segment(t, 0.68, 0.84);
+      if (sunny > 0) {
+        scene.fog.near = THREE.MathUtils.lerp(scene.fog.near, 40, sunny);
+        scene.fog.far = THREE.MathUtils.lerp(scene.fog.far, 170, sunny);
+        scene.fog.color.lerp(sunnyHaze, sunny * 0.85); // 옅은 웜톤 지평선 헤이즈
+      }
+    }
 
     // 막 전환은 인접 이동뿐 아니라 점프(빠른 스크롤/앵커)도 가능 — 이전 막을 항상 정리
     const actsMap = { skydive: act1, deck: act2, arrival: act3 };
