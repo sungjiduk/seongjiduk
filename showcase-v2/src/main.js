@@ -4,9 +4,13 @@
 
 import "./styles/main.css";
 import * as THREE from "three";
+import gsap from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { segment, actProgress, ACTS } from "./core/timeline.js";
 import { createSky } from "./scenes/sky.js";
 import { createClouds } from "./scenes/clouds.js";
+import { loadDuck } from "./scenes/duck.js";
+import { createAct1 } from "./acts/act1-skydive.js";
 import { createLoading } from "./ui/loading.js";
 
 export const prefersReduced = window.matchMedia(
@@ -103,7 +107,8 @@ export function initScene() {
   function animate() {
     raf = requestAnimationFrame(animate);
     timer.update();
-    const dt = timer.getDelta();
+    // 탭 전환/스로틀 복귀 시 dt 스파이크가 이동 로직을 폭주시키지 않도록 클램프
+    const dt = Math.min(timer.getDelta(), 0.05);
     for (const cb of callbacks) cb(dt, timer.getElapsed());
     renderer.render(scene, camera);
   }
@@ -139,49 +144,89 @@ async function boot() {
   const { scene, camera, tick, renderOnce } = ctx;
   const sky = createSky(scene);
   const clouds = createClouds(scene, camera, {
-    clusterCount: isSmall ? 5 : 10, // 모바일 경량화
+    clusterCount: isSmall ? 7 : 16, // 모바일 경량화
+    spread: 13,
+    zNear: -2,
+    zDepth: 14, // 카메라가 내려다보는 낙하 컬럼 안에 배치
   });
 
-  tick((dt) => {
+  // 덕식이 로드(loading.manager → 완료 시 로딩 스크린 자동 종료)
+  let duck = null;
+  let act1 = null;
+  try {
+    duck = await loadDuck(loading.manager);
+    duck.setPose("skydive");
+    scene.add(duck.group);
+    act1 = createAct1({ camera, duck, clouds });
+  } catch (err) {
+    return useFallback(err);
+  }
+
+  tick((dt, elapsed) => {
     sky.update(dt);
     clouds.update(dt);
+    act1?.tickFrame(dt, elapsed);
   });
 
-  // --- 임시 스크롤 배선 (Task 3에서 GSAP ScrollTrigger 스크럽으로 교체) ---
-  // 전역 t: #scroll-space가 만드는 문서 스크롤 진행도 0..1
+  // --- 스크롤 배선: GSAP ScrollTrigger 스크럽 ---
   const state = { t: 0 };
+  let lastAct = "skydive";
   function updateFromScroll(t) {
     state.t = t;
-    const { act } = actProgress(t);
-    // 고고도(space) → 하강하며 새벽 하늘로
-    sky.setBlend(1 - segment(t, 0, ACTS.deck[1]));
-    // 구름: 낙하 중 짙어지고, 덱에서 최대, 화이트아웃 뒤 마을에선 걷힘
-    clouds.setDensity(0.45 + 0.55 * segment(t, 0, ACTS.deck[1]) - segment(t, 0.68, 0.85));
+    const { act, p } = actProgress(t);
+    // 살짝 고고도 틴트에서 시작 → 하강하며 밝은 새벽 하늘로
+    sky.setBlend(0.12 * (1 - segment(t, 0, ACTS.deck[1])));
+    // 구름: 낙하 내내 짙고, 덱에서 최대, 화이트아웃 뒤 마을에선 걷힘
+    clouds.setDensity(
+      0.7 + 0.3 * segment(t, 0, ACTS.deck[1]) - segment(t, 0.68, 0.85)
+    );
     // ACT3 진입 화이트아웃: 0.55 부근 급증 → 마을 페이드 인
-    clouds.whiteout(segment(t, ACTS.arrival[0], 0.63) * (1 - segment(t, 0.66, 0.8)));
+    clouds.whiteout(
+      segment(t, ACTS.arrival[0], 0.63) * (1 - segment(t, 0.66, 0.8))
+    );
+
+    if (act === "skydive") act1?.update(p);
+    else if (lastAct === "skydive") act1?.leave();
+    // deck/arrival 카메라·연출은 Task 4~6에서 담당
+    lastAct = act;
     document.body.dataset.act = act;
   }
+
   if (!prefersReduced) {
-    const onScroll = () => {
-      const max = document.documentElement.scrollHeight - window.innerHeight;
-      updateFromScroll(max > 0 ? window.scrollY / max : 0);
-    };
-    window.addEventListener("scroll", onScroll, { passive: true });
-    onScroll();
+    gsap.registerPlugin(ScrollTrigger);
+    ScrollTrigger.create({
+      trigger: "#scroll-space",
+      start: "top top",
+      end: "bottom bottom",
+      scrub: 0.6,
+      invalidateOnRefresh: true,
+      onUpdate: (self) => updateFromScroll(self.progress),
+    });
+    // 비동기 DOM 높이 변화(패널 렌더 등) → 스크롤 범위 재측정 (v1 교훈)
+    const refresh = () => ScrollTrigger.refresh();
+    window.addEventListener("load", refresh);
+    if ("ResizeObserver" in window) {
+      let lastH = document.body.scrollHeight;
+      new ResizeObserver(() => {
+        const h = document.body.scrollHeight;
+        if (Math.abs(h - lastH) > 40) {
+          lastH = h;
+          refresh();
+        }
+      }).observe(document.body);
+    }
+    updateFromScroll(0);
   } else {
     updateFromScroll(0);
   }
 
-  // 베이스 씬은 GLB 로드가 없으므로 첫 프레임 직후 로딩 종료
-  // (Task 3에서 duck.glb가 loading.manager를 사용하면 onLoad가 이어받는다)
   requestAnimationFrame(() => {
     renderOnce();
     document.documentElement.classList.add("scene-ready");
-    loading.done();
   });
 
   // 디버그/프리뷰 검증용 핸들 (앱 로직은 의존하지 않음)
-  window.__sjd = { ...ctx, sky, clouds, state, updateFromScroll };
+  window.__sjd = { ...ctx, sky, clouds, duck, act1, state, updateFromScroll };
 }
 
 boot();

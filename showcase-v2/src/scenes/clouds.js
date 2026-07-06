@@ -46,27 +46,33 @@ function makeCloudTexture(seed) {
  * @param {THREE.PerspectiveCamera} camera 화이트아웃 풀스크린 쿼드 부착 대상
  * @returns {{ group, setDensity(p):void, whiteout(p):void, update(dt):void }}
  */
-export function createClouds(scene, camera, { clusterCount = 10, spritesPerCluster = 5, spread = 26 } = {}) {
+export function createClouds(
+  scene,
+  camera,
+  { clusterCount = 10, spritesPerCluster = 5, spread = 26, zNear = -4, zDepth = null } = {}
+) {
   const textures = [11, 23, 37, 53, 71].map(makeCloudTexture);
   const group = new THREE.Group();
   group.name = "clouds";
 
+  const depth = zDepth ?? spread;
   const sprites = [];
   for (let ci = 0; ci < clusterCount; ci++) {
-    const cx = (Math.random() - 0.5) * spread * 2;
-    const cy = (Math.random() - 0.5) * spread;
-    const cz = -4 - Math.random() * spread;
+    const cx = (Math.random() - 0.5) * spread * 1.6;
+    const cy = (Math.random() - 0.5) * spread * 1.6; // 수직(낙하) 컬럼 강조
+    const cz = zNear - Math.random() * depth;
     const n = 3 + Math.floor(Math.random() * (spritesPerCluster - 2));
     for (let i = 0; i < n; i++) {
       const mat = new THREE.SpriteMaterial({
         map: textures[(ci + i) % textures.length],
+        color: 0xdde7f2, // 밝은 하늘 배경에서도 형태가 읽히는 소프트 블루그레이
         transparent: true,
         opacity: 0,
         depthWrite: false,
         fog: true,
       });
       const s = new THREE.Sprite(mat);
-      const sc = 3 + Math.random() * 5;
+      const sc = 4.5 + Math.random() * 6;
       s.scale.set(sc * 1.7, sc, 1);
       s.position.set(
         cx + (Math.random() - 0.5) * 6,
@@ -127,15 +133,28 @@ export function createClouds(scene, camera, { clusterCount = 10, spritesPerClust
     }
   }
 
-  /** 은은한 수평 드리프트 */
+  /** 낙하 체감용 수직 스크롤 속도 (units/s, +면 구름이 위로 지나감) */
+  let fallSpeed = 0;
+  function setFall(v) {
+    fallSpeed = v;
+  }
+
+  /** 은은한 수평 드리프트 + 낙하 수직 이동(랩어라운드) */
   function update(dt) {
     if (!group.visible) return;
+    const wrapY = spread * 1.0;
+    const span = wrapY * 2;
     for (const s of sprites) {
       s.position.x -= s.userData.drift * dt;
       if (s.position.x < -spread * 1.2) s.position.x = spread * 1.2;
+      if (fallSpeed !== 0) {
+        // 모듈로 랩: dt가 아무리 커도 항상 ±wrapY 안으로 복귀
+        const y = s.position.y + fallSpeed * dt + wrapY;
+        s.position.y = ((y % span) + span) % span - wrapY;
+      }
     }
   }
 
   setDensity(0.6);
-  return { group, setDensity, whiteout, update };
+  return { group, setDensity, whiteout, setFall, update };
 }
