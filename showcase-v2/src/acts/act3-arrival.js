@@ -4,6 +4,8 @@
 
 import * as THREE from "three";
 import { stationWindow } from "../core/stations.js";
+import { segment } from "../core/timeline.js";
+import { createAirplane } from "../scenes/airplane.js";
 
 const RIDE_START = 0.12; // 화이트아웃이 걷힌 뒤 주행 시작(로컬 p)
 const RIDE_END = 0.96;
@@ -35,6 +37,12 @@ export function createAct3({ camera, duck, clouds, overlay, village, road, bicyc
     village.group.add(finaleAnchor);
     overlay.anchor(finaleAnchor, panels.FINALE);
   }
+
+  // 피날레 픽업 비행기 (토리이 상공으로 하강 → 덕식이 태우고 상승)
+  const plane = createAirplane();
+  plane.group.visible = false;
+  plane.group.rotation.y = Math.PI; // 기수 -Z (도로 진행 방향)
+  village.group.add(plane.group);
 
   // 자전거 + 깃발 배치 (깃발은 짐받이 뒤 바깥쪽 — 덕식이와 겹치지 않게)
   bicycle.group.scale.setScalar(1.45);
@@ -123,11 +131,28 @@ export function createAct3({ camera, duck, clouds, overlay, village, road, bicyc
       }
     }
 
+    // 피날레 루프: 비행기 하강(0.90~0.95) → 탑승(0.945, 덕식이 숨김) → 상승 → 화이트아웃(0.962~1)
+    const pick = segment(p, 0.9, 0.95);
+    const climb = segment(p, 0.95, 1);
+    plane.group.visible = pick > 0;
+    if (plane.group.visible) {
+      plane.group.position.set(
+        pos[0],
+        9 - 6.6 * pick + 9 * climb * climb,
+        pos[2] - 4 - 6 * pick - 22 * climb
+      );
+      plane.group.rotation.x = -0.35 * climb; // 상승 피치
+    }
+    duck.group.visible = p < 0.945; // 탑승 순간 자전거에서 비행기로
+    if (p > 0.94) clouds.whiteout(segment(p, 0.962, 0.995)); // 상승하며 구름 속으로
+
     // 카메라 적용은 tickFrame의 감쇠 추적이 담당 (스크롤 스냅 방지)
   }
 
   function leave() {
     active = false;
+    plane.group.visible = false;
+    duck.group.visible = true;
     if (entered) exit();
     for (const st of village.stations) {
       const el = panels[st.name];
@@ -138,6 +163,7 @@ export function createAct3({ camera, duck, clouds, overlay, village, road, bicyc
   function tickFrame(dt) {
     if (!active) return;
     flag.update(dt);
+    if (plane.group.visible) plane.propeller.rotation.z += dt * 26;
     // 부드러운 팔로우: 목표 지점으로 감쇠 추적 (프레임 경합 방지 겸)
     const k = 1 - Math.pow(0.002, dt); // dt 독립 감쇠
     camera.position.lerp(camPos, k);

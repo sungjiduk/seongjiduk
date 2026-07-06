@@ -112,14 +112,15 @@ export function createAct1({ camera, duck, clouds }) {
     );
     // 뱅크(롤)는 자유낙하에서만 + 점프 직후 360° 스핀(p의 순수 함수, 역방향 복원)
     g.rotation.z = (-smooth.x * 0.55 + Math.sin(elapsed * 0.7) * 0.05) * drop;
-    g.rotation.y = segment(p, DETACH, DROP_END + 0.08) * Math.PI * 2;
+    g.rotation.y = 0;
 
     // 낙하산 전개 후: 직립으로 세워지고 캐노피가 팝(스케일 스프링)
     const deployed = duck.parachute?.visible;
     // 탑승(직립 대기) → 헤드다운 다이브 → 전개 후 직립
     const targetPitch = deployed
       ? 0.12
-      : THREE.MathUtils.lerp(0.15, Math.PI * 0.45, drop);
+      : THREE.MathUtils.lerp(0.15, Math.PI * 0.45, drop) +
+        segment(p, DETACH, DROP_END + 0.1) * Math.PI * 2; // 점프하며 앞구르기 1회전
     duck.pivot.rotation.x +=
       (targetPitch + smooth.y * 0.2 * drop + Math.sin(elapsed * 0.9) * 0.04 -
         duck.pivot.rotation.x) *

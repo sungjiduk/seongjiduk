@@ -297,7 +297,12 @@ async function boot() {
 
   tick((dt, elapsed) => {
     // 스크롤 감쇠 보간: 휠 스텝을 매 프레임 부드럽게 따라감 (턱턱 끊김 제거)
-    if (!prefersReduced && Math.abs(scrollTarget - state.t) > 0.00005) {
+    if (!prefersReduced && scrollTarget > 0.9995 && state.t > 0.993) {
+      // 무한 루프: 비행기 상승 화이트아웃 속에서 처음(기체 탑승)으로 점프
+      window.scrollTo(0, 0);
+      scrollTarget = 0;
+      updateFromScroll(0);
+    } else if (!prefersReduced && Math.abs(scrollTarget - state.t) > 0.00005) {
       updateFromScroll(state.t + (scrollTarget - state.t) * Math.min(1, dt * 3.2));
     }
     sky.update(dt);
