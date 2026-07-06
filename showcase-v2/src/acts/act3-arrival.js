@@ -8,7 +8,7 @@ import { segment } from "../core/timeline.js";
 import { createAirplane } from "../scenes/airplane.js";
 
 const RIDE_START = 0.12; // 화이트아웃이 걷힌 뒤 주행 시작(로컬 p)
-const RIDE_END = 0.96;
+const RIDE_END = 0.9; // p 0.90에 토리이 도착(주행 종료) → 이후 도착 CTA·픽업 시퀀스
 
 export function createAct3({ camera, duck, clouds, overlay, village, road, bicycle, flag, panels }) {
   let active = false;
@@ -107,18 +107,11 @@ export function createAct3({ camera, duck, clouds, overlay, village, road, bicyc
     camPos.z -= tangent[2] * 1.6;
     look.set(pos[0] + tangent[0] * 3, pos[1] + 1.15, pos[2] + tangent[2] * 3);
 
-    // 피날레 CTA: 종점 접근 시 페이드 인
-    if (panels.FINALE) {
-      const fw =
-        THREE.MathUtils.clamp((rideP - 0.9) / 0.03, 0, 1) *
-        (1 - segment(p, 0.968, 0.985)); // TS 정거장 통과 후 토리이 도착 시점에만
-      panels.FINALE.style.opacity = String(fw);
-      panels.FINALE.style.pointerEvents = fw > 0.5 ? "auto" : "none";
-    }
-
-    // 정거장 패널 페이드 + 카메라가 패널 쪽으로 살짝 팬
+    // 정거장 패널 페이드 (PLAN→PROGRESS→API→TS 순차) + 카메라가 패널 쪽으로 팬
+    // 시퀀스는 전역 p 기준으로 서로 겹치지 않게 배치: TS는 도착 CTA 전(p 0.89)에 완전히 사라진다.
     for (const st of village.stations) {
-      const w = stationWindow(rideP, st.p, 0.085);
+      let w = stationWindow(rideP, st.p, 0.085);
+      if (st.name === "TS") w *= 1 - segment(p, 0.84, 0.89); // 마지막 로그는 도착 전 확실히 퇴장
       const el = panels[st.name];
       if (el) {
         el.style.opacity = String(w);
@@ -133,7 +126,14 @@ export function createAct3({ camera, duck, clouds, overlay, village, road, bicyc
       }
     }
 
-    // 피날레 루프: 비행기 하강(0.90~0.95) → 탑승(0.945, 덕식이 숨김) → 상승 → 화이트아웃(0.962~1)
+    // 피날레 CTA "도착했습니다": TS가 사라진 뒤(p 0.9~)에만 등장 → 픽업 비행기 전에 퇴장
+    if (panels.FINALE) {
+      const fw = segment(p, 0.9, 0.93) * (1 - segment(p, 0.95, 0.965));
+      panels.FINALE.style.opacity = String(fw);
+      panels.FINALE.style.pointerEvents = fw > 0.5 ? "auto" : "none";
+    }
+
+    // 피날레 루프: 비행기 하강(0.955~) → 탑승(0.982, 덕식이 숨김) → 상승 → 화이트아웃 → 처음으로
     const pick = segment(p, 0.955, 0.985);
     const climb = segment(p, 0.985, 1);
     plane.group.visible = pick > 0;
