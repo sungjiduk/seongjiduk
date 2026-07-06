@@ -47,17 +47,29 @@ function hasWebGL() {
   }
 }
 
-function useFallback(reason) {
+function useFallback() {
   document.documentElement.classList.remove("hero-loading", "hero-ready");
-  document.documentElement.classList.add(
-    reason === "reduced" ? "reduced" : "no-webgl"
-  );
+  document.documentElement.classList.add("no-webgl");
+}
+
+/** 소프트 구름 텍스처(라디얼 그라디언트). 텍스처 없는 Sprite는 흰 사각형으로 보인다. */
+function makeCloudTexture(THREE) {
+  const c = document.createElement("canvas");
+  c.width = c.height = 128;
+  const ctx = c.getContext("2d");
+  const g = ctx.createRadialGradient(64, 64, 8, 64, 64, 62);
+  g.addColorStop(0, "rgba(255,255,255,0.9)");
+  g.addColorStop(0.55, "rgba(255,255,255,0.45)");
+  g.addColorStop(1, "rgba(255,255,255,0)");
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, 128, 128);
+  return new THREE.CanvasTexture(c);
 }
 
 async function initHero() {
   setupZones();
 
-  if (prefersReduced) return useFallback("reduced");
+  // reduced-motion: 3D는 정적으로 렌더(스크롤 연출·부유 애니메이션만 끔)
   if (!hasWebGL()) return useFallback("nowebgl");
 
   // 로딩 시작: 2D 덕식이를 플레이스홀더로 표시 (모델 준비되면 페이드아웃)
@@ -140,8 +152,10 @@ async function initHero() {
   let duckModel = null;
   const DUCK_BASE_SCALE = isSmall ? 1.7 : 1.95; // 오토스케일 후 목표 크기(단위)
   const DUCK_BASE_YAW = 0; // 카메라를 향하도록 기본 회전(정면)
-  const DUCK_REST_X = isSmall ? 0 : 3.6; // 헤드라인을 비우도록 우측 배치
-  const DUCK_REST_Y = isSmall ? 1.2 : 0.7;
+  // 휴식 위치는 현재 폭 기준으로 매번 계산 (리사이즈·프리뷰 초기폭 고정 방지)
+  const duckRestX = () => (window.innerWidth <= 640 ? 0 : 3.0); // 헤드라인 비우는 우측
+  const duckRestY = () => (window.innerWidth <= 640 ? 1.75 : 0.7); // 모바일: 카피 위로
+  const duckRestS = () => (window.innerWidth <= 640 ? 0.72 : 1); // 모바일: 축소
 
   const gltfLoader = new GLTFLoader();
   gltfLoader.setMeshoptDecoder(MeshoptDecoder);
@@ -167,6 +181,7 @@ async function initHero() {
       duckModel = model;
       updateFromScroll(state.t); // 현재 스크롤 위치 반영
       document.documentElement.classList.add("hero-ready"); // 캔버스 페이드인 + 2D 폴백 페이드아웃
+      if (prefersReduced) renderOnce(); // 정적 모드: 로드 시점에 한 번 그림
     },
     undefined,
     (err) => {
@@ -179,9 +194,10 @@ async function initHero() {
   const clouds = new THREE.Group();
   scene.add(clouds);
   const cloudMat = new THREE.SpriteMaterial({
-    color: 0xffffff,
+    map: makeCloudTexture(THREE),
     transparent: true,
-    opacity: 0.55,
+    opacity: 0.5,
+    depthWrite: false,
   });
   const cloudCount = isSmall ? 8 : 16;
   for (let i = 0; i < cloudCount; i++) {
@@ -290,9 +306,9 @@ async function initHero() {
     if (duckModel) {
       if (t < 0.7) {
         // 부유 → 캐치 → 슝 (오른쪽 휴식 위치에서 비행기 쪽으로 → 화면 밖으로)
-        const flyX = DUCK_REST_X + catchP * 1.2 + dash * 9;
-        duckGroup.position.set(flyX, DUCK_REST_Y + Math.sin(t * Math.PI) * 0.5, 0);
-        duckGroup.scale.setScalar(Math.max(0.001, 1 - dash)); // 슝 하며 작아짐
+        const flyX = duckRestX() + catchP * 1.2 + dash * 9;
+        duckGroup.position.set(flyX, duckRestY() + Math.sin(t * Math.PI) * 0.5, 0);
+        duckGroup.scale.setScalar(Math.max(0.001, (1 - dash) * duckRestS())); // 슝 하며 작아짐
         duckPivot.rotation.z = -catchP * 0.5; // 비행 뱅크
       } else {
         // 지구본 앞면에 안착: 슝 직후 다시 커지며 등장 (t 0.70→0.92 풀사이즈)
@@ -352,8 +368,9 @@ async function initHero() {
     }
   }
 
-  if (window.gsap) wireScroll();
-  else window.addEventListener("load", wireScroll);
+  function renderOnce() {
+    renderer.render(scene, camera);
+  }
 
   let raf = 0;
   const clock = new THREE.Clock();
@@ -372,18 +389,28 @@ async function initHero() {
     }
     renderer.render(scene, camera);
   }
-  animate();
+
+  if (prefersReduced) {
+    // 정적 모드: 스크롤 연출·애니메이션 루프 없이 휴식 포즈만 렌더
+    renderOnce();
+  } else {
+    if (window.gsap) wireScroll();
+    else window.addEventListener("load", wireScroll);
+    animate();
+
+    // 탭 비가시 시 렌더 정지(성능)
+    document.addEventListener("visibilitychange", () => {
+      if (document.hidden) cancelAnimationFrame(raf);
+      else animate();
+    });
+  }
 
   window.addEventListener("resize", () => {
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
     renderer.setSize(window.innerWidth, window.innerHeight);
-  });
-
-  // 탭 비가시 시 렌더 정지(성능)
-  document.addEventListener("visibilitychange", () => {
-    if (document.hidden) cancelAnimationFrame(raf);
-    else animate();
+    updateFromScroll(state.t); // 휴식 위치 등 폭 의존 값 재계산
+    if (prefersReduced) renderOnce();
   });
 }
 

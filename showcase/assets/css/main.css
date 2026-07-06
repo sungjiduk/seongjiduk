@@ -1,36 +1,39 @@
-/* 성지덕 쇼케이스 — 항공 여정 디자인 토큰 & 레이아웃 */
+/* 성지덕 쇼케이스 — 항공 여정 디자인 토큰 & 레이아웃
+   콘텐츠는 "보딩 서류" 화이트 패널 위에 얹는다: 하늘/3D는 배경,
+   텍스트는 항상 불투명 패널 + 진네이비 잉크 (스크롤 구간과 무관하게 고대비). */
 
 :root {
-  /* 하늘/고도 컬러 토큰 (스펙 §1) */
+  /* 하늘/고도 컬러 토큰 */
   --sky-dawn: #eaf3fb;
   --sky-mid: #7fb2e6;
   --altitude: #1b2a4a;
   --space: #0b1026;
 
-  /* 포인트 */
-  --duck: #ffc24b; /* 부리 옐로우, 시그니처 */
-  --coral: #ff5a7a; /* CTA/강조 */
+  /* 서류(패널) & 잉크 — 콘텐츠 가독성의 기준 */
+  --paper: #ffffff;
+  --paper-soft: #f2f6fb;
+  --paper-border: #dce6f2;
+  --ink: #10203b;
+  --ink-dim: #5a6b85;
 
-  /* 텍스트 (배경 구간에 따라 --ink 가 전환됨) */
-  --ink-sky: #0b1026;
-  --ink-space: #eaf3fb;
-  --ink: var(--ink-sky);
-  --ink-dim: color-mix(in srgb, var(--ink) 62%, transparent);
-  --card: color-mix(in srgb, var(--ink) 5%, transparent);
-  --card-border: color-mix(in srgb, var(--ink) 16%, transparent);
+  /* 포인트 */
+  --duck: #f5a80c; /* 부리 옐로우(대비 강화판) */
+  --duck-soft: #ffc24b;
+  --coral: #e8395f; /* CTA/강조 */
 
   /* 메서드 색상 (노선도) */
-  --m-get: #3aa0ff;
-  --m-post: #34c98a;
-  --m-patch: #ffb020;
-  --m-delete: #ff5a7a;
+  --m-get: #2f7fd4;
+  --m-post: #1f9e6d;
+  --m-patch: #d98b00;
+  --m-delete: #e8395f;
 
   --font-display: "Space Grotesk", "Pretendard", system-ui, sans-serif;
   --font-body: "Pretendard", "Inter", system-ui, sans-serif;
   --font-mono: "Space Mono", ui-monospace, "SFMono-Regular", monospace;
 
-  --maxw: 960px;
-  --radius: 14px;
+  --maxw: 880px;
+  --radius: 18px;
+  --shadow: 0 10px 34px rgba(11, 16, 38, 0.14), 0 2px 8px rgba(11, 16, 38, 0.08);
 }
 
 * {
@@ -48,7 +51,6 @@ body {
   background: var(--space);
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
-  transition: color 0.6s ease;
 }
 
 .mono {
@@ -59,7 +61,7 @@ body {
   font-family: var(--font-display);
   font-weight: 700;
   letter-spacing: -0.01em;
-  line-height: 1.05;
+  line-height: 1.08;
 }
 
 /* --- 배경: 스크롤 구간에 따라 전이 --- */
@@ -85,11 +87,6 @@ body[data-zone="space"] .sky-backdrop {
     #16204a 0%,
     var(--space) 60%
   );
-}
-/* 우주/고도 구간에서 잉크 반전 */
-body[data-zone="altitude"],
-body[data-zone="space"] {
-  --ink: var(--ink-space);
 }
 
 /* --- 히어로 캔버스 스테이지 --- */
@@ -118,14 +115,6 @@ body[data-zone="space"] {
   justify-content: center;
   transition: opacity 0.6s ease;
 }
-/* GLB 로딩 중에는 2D 덕식이를 플레이스홀더로 표시 */
-.hero-loading .hero-fallback {
-  display: flex;
-}
-.hero-ready.hero-loading .hero-fallback {
-  opacity: 0;
-  pointer-events: none;
-}
 .hero-fallback__duck {
   width: min(38vw, 200px);
   height: auto;
@@ -141,13 +130,19 @@ body[data-zone="space"] {
     transform: translateY(-14px) rotate(2deg);
   }
 }
-/* 3D 실패/reduced-motion 시 폴백 표시 */
-.no-webgl .hero-fallback,
-.reduced .hero-fallback {
+/* GLB 로딩 중에는 2D 덕식이를 플레이스홀더로 표시 */
+.hero-loading .hero-fallback {
   display: flex;
 }
-.no-webgl #hero-canvas,
-.reduced #hero-canvas {
+.hero-ready.hero-loading .hero-fallback {
+  opacity: 0;
+  pointer-events: none;
+}
+/* 3D 실패/WebGL 미지원 시 폴백 표시 */
+.no-webgl .hero-fallback {
+  display: flex;
+}
+.no-webgl #hero-canvas {
   display: none;
 }
 
@@ -166,59 +161,81 @@ body[data-zone="space"] {
   left: 0;
 }
 
-/* --- 상단바 --- */
+/* --- 상단바: 블러 화이트 필 (어디서나 동일 대비) --- */
 .topbar {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
+  top: 0.8rem;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(var(--maxw), calc(100% - 2rem));
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0.9rem 1.4rem;
+  padding: 0.55rem 1.1rem;
   z-index: 10;
-  mix-blend-mode: difference;
-  color: #fff;
+  background: rgba(255, 255, 255, 0.86);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid var(--paper-border);
+  border-radius: 999px;
+  box-shadow: 0 4px 18px rgba(11, 16, 38, 0.1);
+  color: var(--ink);
 }
 .topbar__brand {
   font-family: var(--font-display);
   font-weight: 700;
-  font-size: 1.1rem;
+  font-size: 1.05rem;
 }
 .topbar__flight {
-  font-size: 0.75rem;
-  opacity: 0.85;
+  font-size: 0.72rem;
+  color: var(--ink-dim);
 }
 
-/* --- 섹션 공통 --- */
+/* --- 섹션 공통: 콘텐츠 = 화이트 패널 --- */
 .section {
   position: relative;
-  padding: clamp(4rem, 12vh, 9rem) 1.4rem;
-}
-.section--hero {
-  min-height: 100svh;
-  display: flex;
-  align-items: center;
+  padding: 1.1rem 1.2rem;
 }
 .section__inner {
   max-width: var(--maxw);
   margin: 0 auto;
   width: 100%;
+  background: var(--paper);
+  border: 1px solid var(--paper-border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: clamp(1.6rem, 4vw, 2.6rem);
 }
+/* 히어로는 하늘 위에 직접 (패널 없음) */
+.section--hero {
+  min-height: 92svh;
+  display: flex;
+  align-items: center;
+  padding-top: 5rem;
+}
+.section--hero .section__inner {
+  background: none;
+  border: 0;
+  box-shadow: none;
+  padding: 0 0.4rem;
+}
+
 .leg-tag {
-  font-size: 0.78rem;
+  font-size: 0.74rem;
   color: var(--coral);
   font-weight: 700;
-  margin: 0 0 0.6rem;
+  margin: 0 0 0.5rem;
+  letter-spacing: 0.08em;
 }
 .section-title {
-  font-size: clamp(1.9rem, 5vw, 3.1rem);
-  margin: 0 0 0.6rem;
+  font-size: clamp(1.5rem, 3.4vw, 2.1rem);
+  margin: 0 0 0.5rem;
 }
 .section-desc {
   color: var(--ink-dim);
-  max-width: 46ch;
-  margin: 0 0 2rem;
+  max-width: 56ch;
+  margin: 0 0 1.6rem;
+  font-size: 0.95rem;
 }
 
 /* --- 히어로 카피 --- */
@@ -226,26 +243,29 @@ body[data-zone="space"] {
   max-width: 640px;
 }
 .hero-title {
-  font-size: clamp(2.6rem, 9vw, 5rem);
+  font-size: clamp(2.4rem, 8vw, 4.4rem);
   margin: 0 0 1rem;
+  color: var(--ink);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.55);
 }
 .hero-lead {
-  font-size: clamp(1.05rem, 2.4vw, 1.4rem);
-  font-weight: 600;
+  font-size: clamp(1.05rem, 2.4vw, 1.35rem);
+  font-weight: 700;
   margin: 0 0 0.4rem;
 }
 .hero-oneliner {
-  color: var(--ink-dim);
+  color: #33456a;
   max-width: 44ch;
   margin: 0 0 2rem;
 }
 .scroll-hint {
   display: inline-block;
   color: var(--ink);
+  background: rgba(255, 255, 255, 0.8);
   text-decoration: none;
   font-size: 0.85rem;
-  border: 1px solid var(--card-border);
-  padding: 0.55rem 1rem;
+  border: 1px solid var(--paper-border);
+  padding: 0.55rem 1.1rem;
   border-radius: 999px;
   animation: nudge 2.4s ease-in-out infinite;
 }
@@ -262,8 +282,8 @@ body[data-zone="space"] {
 /* --- scroll reveal --- */
 .reveal {
   opacity: 0;
-  transform: translateY(28px);
-  transition: opacity 0.7s ease, transform 0.7s ease;
+  transform: translateY(24px);
+  transition: opacity 0.6s ease, transform 0.6s ease;
 }
 .reveal.is-in {
   opacity: 1;
@@ -276,34 +296,36 @@ body[data-zone="space"] {
   padding: 0;
   margin: 0;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
-  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 0.9rem;
 }
 .crew-card {
-  background: var(--card);
-  border: 1px solid var(--card-border);
-  border-radius: var(--radius);
-  padding: 1.2rem;
-  backdrop-filter: blur(6px);
+  background: var(--paper-soft);
+  border: 1px solid var(--paper-border);
+  border-radius: 12px;
+  padding: 1.1rem 1.2rem;
 }
 .crew-card__role {
+  font-size: 0.68rem;
+  color: var(--coral);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+.crew-card__name {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.2rem;
+  margin: 0.15rem 0;
+}
+.crew-card__gate {
   font-size: 0.72rem;
   color: var(--duck);
   font-weight: 700;
 }
-.crew-card__name {
-  font-family: var(--font-display);
-  font-weight: 600;
-  font-size: 1.15rem;
-  margin: 0.2rem 0;
-}
-.crew-card__gate {
-  font-size: 0.78rem;
-  color: var(--ink-dim);
-}
 .crew-card__line {
-  font-size: 0.9rem;
-  margin: 0.6rem 0 0;
+  font-size: 0.88rem;
+  color: var(--ink-dim);
+  margin: 0.55rem 0 0;
 }
 
 /* --- 진행률: 전체 게이지 --- */
@@ -312,12 +334,12 @@ body[data-zone="space"] {
   align-items: center;
   gap: 1.6rem;
   flex-wrap: wrap;
-  margin-bottom: 2.4rem;
+  margin-bottom: 2rem;
 }
 .gauge {
   position: relative;
-  width: 180px;
-  height: 180px;
+  width: 168px;
+  height: 168px;
   flex: 0 0 auto;
 }
 .gauge__svg {
@@ -327,7 +349,7 @@ body[data-zone="space"] {
 }
 .gauge__track {
   fill: none;
-  stroke: var(--card-border);
+  stroke: var(--paper-soft);
   stroke-width: 10;
 }
 .gauge__fill {
@@ -348,11 +370,11 @@ body[data-zone="space"] {
   justify-content: center;
 }
 .gauge__pct {
-  font-size: 2.2rem;
+  font-size: 2rem;
   font-weight: 700;
 }
 .gauge__sub {
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   color: var(--ink-dim);
 }
 .progress-updated {
@@ -364,72 +386,74 @@ body[data-zone="space"] {
 .parts {
   list-style: none;
   padding: 0;
-  margin: 0 0 2.6rem;
+  margin: 0 0 2rem;
   display: grid;
-  gap: 0.7rem;
+  gap: 0.6rem;
 }
 .part-row {
-  background: var(--card);
-  border: 1px solid var(--card-border);
+  background: var(--paper-soft);
+  border: 1px solid var(--paper-border);
   border-radius: 10px;
-  padding: 0.85rem 1rem;
+  padding: 0.75rem 1rem;
   display: grid;
   grid-template-columns: 1fr auto;
-  gap: 0.5rem 1rem;
+  gap: 0.45rem 1rem;
   align-items: center;
 }
 .part-row__name {
   font-weight: 600;
+  font-size: 0.95rem;
 }
 .part-row__code {
-  color: var(--duck);
-  font-size: 0.72rem;
+  color: var(--coral);
+  font-size: 0.7rem;
+  font-weight: 700;
   margin-right: 0.5rem;
 }
 .part-row__frac {
-  font-size: 0.85rem;
+  font-size: 0.82rem;
   color: var(--ink-dim);
   text-align: right;
 }
 .part-row__bar {
   grid-column: 1 / -1;
-  height: 8px;
+  height: 7px;
   border-radius: 999px;
-  background: var(--card-border);
+  background: #e4ecf6;
   overflow: hidden;
 }
 .part-row__bar > span {
   display: block;
   height: 100%;
   width: 0;
-  background: linear-gradient(90deg, var(--duck), var(--coral));
+  background: linear-gradient(90deg, var(--duck-soft), var(--coral));
   border-radius: inherit;
   transition: width 1.2s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 /* --- 최근 머지 티켓 --- */
 .recent__title {
-  font-size: 0.85rem;
+  font-size: 0.82rem;
   color: var(--ink-dim);
-  margin: 0 0 0.8rem;
+  margin: 0 0 0.7rem;
 }
 .recent__list {
   list-style: none;
   padding: 0;
   margin: 0;
   display: grid;
-  gap: 0.5rem;
+  gap: 0.45rem;
 }
 .ticket {
   display: flex;
   align-items: baseline;
   gap: 0.8rem;
-  background: var(--card);
-  border: 1px dashed var(--card-border);
+  background: var(--paper-soft);
+  border: 1px dashed var(--paper-border);
   border-radius: 8px;
-  padding: 0.6rem 0.9rem;
+  padding: 0.5rem 0.85rem;
   font-family: var(--font-mono);
-  font-size: 0.85rem;
+  font-size: 0.82rem;
 }
 .ticket__num {
   color: var(--coral);
@@ -445,24 +469,24 @@ body[data-zone="space"] {
 .ticket__date {
   color: var(--ink-dim);
   flex: 0 0 auto;
-  font-size: 0.75rem;
+  font-size: 0.72rem;
 }
 
 /* --- 노선도 (터미널/게이트) --- */
 .route-meta {
-  font-size: 0.78rem;
+  font-size: 0.76rem;
   color: var(--ink-dim);
-  margin: -1rem 0 1.6rem;
+  margin: -0.9rem 0 1.4rem;
 }
 .terminals {
   display: grid;
-  gap: 1rem;
+  gap: 0.9rem;
 }
 .terminal {
-  background: var(--card);
-  border: 1px solid var(--card-border);
-  border-radius: var(--radius);
-  padding: 1rem 1.2rem;
+  background: var(--paper-soft);
+  border: 1px solid var(--paper-border);
+  border-radius: 12px;
+  padding: 0.95rem 1.1rem;
 }
 .terminal__head {
   display: flex;
@@ -472,27 +496,28 @@ body[data-zone="space"] {
 .terminal__code {
   font-family: var(--font-mono);
   font-weight: 700;
-  color: var(--duck);
-  font-size: 0.8rem;
+  color: var(--coral);
+  font-size: 0.78rem;
 }
 .terminal__name {
   font-family: var(--font-display);
-  font-weight: 600;
-  font-size: 1.2rem;
+  font-weight: 700;
+  font-size: 1.1rem;
 }
 .terminal__desc {
   color: var(--ink-dim);
-  font-size: 0.85rem;
-  margin: 0.2rem 0 0.9rem;
+  font-size: 0.83rem;
+  margin: 0.15rem 0 0.8rem;
 }
 .gates {
   display: grid;
-  gap: 0.4rem;
+  gap: 0.35rem;
 }
 .gate {
-  border: 1px solid var(--card-border);
+  border: 1px solid var(--paper-border);
   border-radius: 8px;
   overflow: hidden;
+  background: var(--paper);
 }
 .gate__btn {
   width: 100%;
@@ -502,22 +527,22 @@ body[data-zone="space"] {
   background: transparent;
   border: 0;
   color: inherit;
-  padding: 0.6rem 0.8rem;
+  padding: 0.55rem 0.8rem;
   cursor: pointer;
   font-family: var(--font-mono);
-  font-size: 0.85rem;
+  font-size: 0.83rem;
   text-align: left;
 }
 .gate__btn:hover {
-  background: color-mix(in srgb, var(--ink) 6%, transparent);
+  background: #f6f9fd;
 }
 .method {
   flex: 0 0 auto;
   font-weight: 700;
-  font-size: 0.72rem;
-  padding: 0.15rem 0.5rem;
+  font-size: 0.7rem;
+  padding: 0.16rem 0.5rem;
   border-radius: 5px;
-  color: #06122a;
+  color: #fff;
   min-width: 58px;
   text-align: center;
 }
@@ -532,7 +557,6 @@ body[data-zone="space"] {
 }
 .method--DELETE {
   background: var(--m-delete);
-  color: #fff;
 }
 .gate__path {
   flex: 1;
@@ -542,9 +566,9 @@ body[data-zone="space"] {
 }
 .gate__auth {
   flex: 0 0 auto;
-  font-size: 0.68rem;
+  font-size: 0.66rem;
   color: var(--ink-dim);
-  border: 1px solid var(--card-border);
+  border: 1px solid var(--paper-border);
   padding: 0.05rem 0.4rem;
   border-radius: 4px;
 }
@@ -552,6 +576,7 @@ body[data-zone="space"] {
   flex: 0 0 auto;
   transition: transform 0.2s ease;
   color: var(--ink-dim);
+  font-size: 0.7rem;
 }
 .gate__btn[aria-expanded="true"] .gate__chev {
   transform: rotate(90deg);
@@ -561,61 +586,66 @@ body[data-zone="space"] {
   max-height: 0;
   overflow: hidden;
   transition: max-height 0.3s ease, padding 0.3s ease;
-  font-size: 0.85rem;
+  font-size: 0.83rem;
+  margin: 0;
 }
 .gate__detail.is-open {
-  padding: 0.4rem 0.9rem 0.9rem;
+  padding: 0.35rem 0.9rem 0.85rem;
   max-height: 240px;
 }
 .gate__detail dt {
   color: var(--ink-dim);
-  font-size: 0.72rem;
+  font-size: 0.7rem;
   font-family: var(--font-mono);
   margin-top: 0.4rem;
+}
+.gate__detail dd {
+  margin: 0.1rem 0 0;
 }
 
 /* --- 타임라인 --- */
 .timeline {
   list-style: none;
   padding: 0;
-  margin: 0 0 2.6rem;
+  margin: 0 0 2rem;
   display: grid;
-  gap: 0.6rem;
+  gap: 0.5rem;
 }
 .leg {
   display: grid;
   grid-template-columns: auto 1fr;
   gap: 1rem;
   align-items: start;
-  background: var(--card);
-  border: 1px solid var(--card-border);
+  background: var(--paper-soft);
+  border: 1px solid var(--paper-border);
   border-radius: 10px;
-  padding: 0.9rem 1.1rem;
+  padding: 0.7rem 1rem;
 }
 .leg--done {
-  border-color: color-mix(in srgb, var(--duck) 40%, var(--card-border));
+  border-color: color-mix(in srgb, var(--duck) 45%, var(--paper-border));
 }
 .leg--today {
   outline: 2px solid var(--coral);
 }
 .leg__date {
   font-family: var(--font-mono);
-  font-size: 0.85rem;
+  font-size: 0.82rem;
   font-weight: 700;
-  color: var(--duck);
+  color: var(--coral);
   white-space: nowrap;
 }
 .leg__label {
-  font-size: 0.95rem;
+  font-size: 0.92rem;
 }
 .leg__status {
-  font-size: 0.7rem;
+  font-size: 0.68rem;
   font-family: var(--font-mono);
   color: var(--ink-dim);
   margin-left: 0.5rem;
 }
 .leg--today .leg__status {
   color: var(--coral);
+  font-weight: 700;
 }
 
 /* --- CTA --- */
@@ -628,10 +658,11 @@ body[data-zone="space"] {
   font-family: var(--font-mono);
   text-decoration: none;
   color: var(--ink);
-  border: 1px solid var(--card-border);
-  padding: 0.65rem 1.3rem;
+  border: 1px solid var(--paper-border);
+  background: var(--paper-soft);
+  padding: 0.6rem 1.25rem;
   border-radius: 999px;
-  font-size: 0.9rem;
+  font-size: 0.88rem;
   transition: transform 0.15s ease, background 0.15s ease;
 }
 .cta__btn:hover {
@@ -645,37 +676,40 @@ body[data-zone="space"] {
 .cta__btn--swagger {
   background: var(--duck);
   border-color: var(--duck);
-  color: #06122a;
+  color: #10203b;
 }
 
 /* --- 포커스 가시성 --- */
 a:focus-visible,
 button:focus-visible {
-  outline: 3px solid var(--duck);
+  outline: 3px solid var(--coral);
   outline-offset: 2px;
   border-radius: 4px;
 }
 
-/* --- 푸터 --- */
+/* --- 푸터 (우주 배경 위 라이트 텍스트) --- */
 .footer {
-  padding: 3rem 1.4rem;
+  padding: 2.4rem 1.4rem 3rem;
   text-align: center;
-  color: var(--ink-dim);
-  font-size: 0.78rem;
+  color: rgba(234, 243, 251, 0.75);
+  font-size: 0.76rem;
 }
 
 /* --- 반응형 --- */
 @media (max-width: 560px) {
   .gauge {
-    width: 150px;
-    height: 150px;
+    width: 140px;
+    height: 140px;
   }
   .ticket__date {
     display: none;
   }
+  .section {
+    padding: 0.8rem 0.8rem;
+  }
 }
 
-/* --- reduced-motion 존중 --- */
+/* --- reduced-motion 존중 (3D는 정적으로 유지, CSS 모션만 제거) --- */
 @media (prefers-reduced-motion: reduce) {
   * {
     animation-duration: 0.001ms !important;
