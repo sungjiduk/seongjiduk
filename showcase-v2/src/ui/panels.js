@@ -169,11 +169,19 @@ export function buildStationPanels({ schedule, progress, apiSpec, troubleshootin
       </div>
     </section>`);
 
-  // TS — 트러블슈팅 로그
+  // TS — 트러블슈팅 로그 (+ 팀원 직접 추가 버튼)
+  const TS_ISSUE_URL =
+    "https://github.com/sungjiduk/seongjiduk/issues/new?template=troubleshooting.yml";
   panels.TS = el(`
     <section class="station-panel station-panel--wide">
-      <p class="station-panel__tag mono">STATION 04 · FLIGHT LOG</p>
-      <h2 class="station-panel__title">트러블슈팅 기록</h2>
+      <div class="station-panel__head">
+        <div>
+          <p class="station-panel__tag mono">STATION 04 · FLIGHT LOG</p>
+          <h2 class="station-panel__title">트러블슈팅 기록</h2>
+        </div>
+        <a class="ts-add mono" href="${TS_ISSUE_URL}" target="_blank" rel="noopener"
+          >＋ 기록 추가</a>
+      </div>
       <ul class="station-panel__ts">
         ${(troubleshooting?.items ?? [])
           .map(
