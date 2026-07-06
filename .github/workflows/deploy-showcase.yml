@@ -1,94 +1,39 @@
-name: Showcase v2 — EC2 deploy
+# 쇼케이스 v2 — Vercel 배포 트리거
+#
+# 빌드/배포 자체는 Vercel Git 연동이 push마다 자동 수행한다.
+# 이 워크플로우는 "코드 변경 없이도" 진행률 스냅샷이 갱신되도록
+# 30분마다 Vercel Deploy Hook을 호출해 재빌드를 트리거한다.
+# (빌드 시 showcase-v2/scripts/refresh-progress.mjs 가 GitHub 이슈·PR을 재집계)
+#
+# 필요 시크릿:
+#   VERCEL_DEPLOY_HOOK_URL  Vercel 프로젝트 Settings → Git → Deploy Hooks에서 생성한 URL
+# Vercel 프로젝트 환경변수:
+#   SHOWCASE_TOKEN          (선택) private repo 이슈 집계용 PAT — 없으면 커밋된 스냅샷 사용
 
-# showcase-v2를 빌드하고 진행률(progress.json)을 재집계한 뒤
-# EC2(holymoly.cloud, NPM 뒤 정적 루트)로 rsync 배포한다.
-# - showcase-v2 변경 push(dev/main)
-# - 30분 주기 schedule (진행률 갱신 — 기본 브랜치 기준으로 실행됨)
-# - 수동 workflow_dispatch
+name: Trigger showcase deploy
+
 on:
-  push:
-    branches: [dev, main]
-    paths:
-      - "showcase-v2/**"
-      - ".github/workflows/deploy-showcase.yml"
   schedule:
     - cron: "*/30 * * * *"
   workflow_dispatch:
 
-permissions:
-  contents: read
-
 concurrency:
-  group: deploy-showcase-v2
+  group: showcase-deploy-trigger
   cancel-in-progress: true
 
 jobs:
-  deploy:
+  trigger:
     runs-on: ubuntu-latest
     steps:
-      # 시크릿 미설정 상태에서 조용히 깨지지 않도록 잡 시작에 명시적으로 검사한다.
-      # (secrets는 if: 조건에서 직접 못 읽으므로 env 경유 셸 체크)
-      - name: 배포 시크릿 존재 확인
-        env:
-          EC2_HOST: ${{ secrets.EC2_HOST }}
-          EC2_USER: ${{ secrets.EC2_USER }}
-          EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
-          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+      - name: Check secret
         run: |
-          missing=()
-          [ -z "$EC2_HOST" ] && missing+=(EC2_HOST)
-          [ -z "$EC2_USER" ] && missing+=(EC2_USER)
-          [ -z "$EC2_SSH_KEY" ] && missing+=(EC2_SSH_KEY)
-          [ -z "$DEPLOY_PATH" ] && missing+=(DEPLOY_PATH)
-          if [ ${#missing[@]} -gt 0 ]; then
-            echo "::error::배포 시크릿 미설정: ${missing[*]} — Settings → Secrets and variables → Actions에 등록하세요. (showcase-v2/README.md 참고)"
+          if [ -z "${{ secrets.VERCEL_DEPLOY_HOOK_URL }}" ]; then
+            echo "::error::VERCEL_DEPLOY_HOOK_URL 시크릿이 없습니다. Vercel → Settings → Git → Deploy Hooks에서 생성해 등록하세요."
             exit 1
           fi
-          echo "배포 시크릿 4종 확인 완료."
 
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "22"
-          cache: npm
-          cache-dependency-path: showcase-v2/package-lock.json
-
-      - name: showcase-v2 빌드
-        working-directory: showcase-v2
+      - name: Call Vercel deploy hook
         run: |
-          npm ci
-          npm run build
-
-      - name: 진행률 집계 (dist/data/progress.json 갱신)
-        # 실패해도 빌드에 복사된 기존 progress.json으로 배포는 계속한다.
-        continue-on-error: true
-        env:
-          # 대상 백엔드 repo가 private이므로 SHOWCASE_TOKEN(repo 읽기 PAT) 우선,
-          # 없으면 기본 GITHUB_TOKEN 폴백 (v1 showcase-pages.yml과 동일 전략)
-          GITHUB_TOKEN: ${{ secrets.SHOWCASE_TOKEN || secrets.GITHUB_TOKEN }}
-          TARGET_REPOS: sungjiduk/seongjiduk-backend
-          OUT_FILE: showcase-v2/dist/data/progress.json
-          API_SPEC_FILE: showcase/data/api-spec.json
-        run: node showcase/scripts/build-progress.mjs
-
-      - name: SSH 에이전트 설정
-        uses: webfactory/ssh-agent@v0.9.0
-        with:
-          ssh-private-key: ${{ secrets.EC2_SSH_KEY }}
-
-      - name: known_hosts 등록
-        env:
-          EC2_HOST: ${{ secrets.EC2_HOST }}
-        run: |
-          mkdir -p ~/.ssh
-          ssh-keyscan -H "$EC2_HOST" >> ~/.ssh/known_hosts
-
-      - name: EC2로 rsync 배포
-        env:
-          EC2_HOST: ${{ secrets.EC2_HOST }}
-          EC2_USER: ${{ secrets.EC2_USER }}
-          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
-        run: |
-          rsync -az --delete showcase-v2/dist/ "$EC2_USER@$EC2_HOST:$DEPLOY_PATH/"
-          echo "배포 완료 → $EC2_HOST:$DEPLOY_PATH (https://holymoly.cloud)"
+          code=$(curl -s -o /dev/null -w "%{http_code}" -X POST "${{ secrets.VERCEL_DEPLOY_HOOK_URL }}")
+          echo "Deploy hook HTTP $code"
+          [ "$code" = "200" ] || [ "$code" = "201" ]
