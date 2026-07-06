@@ -139,27 +139,44 @@ async function main() {
     }
   }
 
-  // prefix별 이슈 수 집계.
-  const issueStats = new Map(); // code → { done, total } (이슈 기준)
-  for (const it of allIssues) {
-    const code = partOf(it.title);
-    if (!code) continue;
-    if (!issueStats.has(code)) issueStats.set(code, { done: 0, total: 0 });
-    const s = issueStats.get(code);
-    s.total += 1;
-    if (it.state === "closed") s.done += 1;
+  // done 판정 = 닫힌 이슈 ∪ 머지된 PR 의 고유 "PART-번호" 토큰.
+  // (같은 엔드포인트를 이슈와 PR로 이중 추적해도 1개로만 카운트)
+  const doneTokens = new Map(); // code → Set<"PART-번호">  (완료)
+  const seenTokens = new Map(); // code → Set<"PART-번호">  (전체 태그 항목, 명세 외 파트 분모용)
+  const addToken = (title, isDone) => {
+    const m = title.match(PART_RE);
+    if (!m) return;
+    const token = m[0].toUpperCase();
+    const code = m[1].toUpperCase();
+    if (!seenTokens.has(code)) seenTokens.set(code, new Set());
+    seenTokens.get(code).add(token);
+    if (isDone) {
+      if (!doneTokens.has(code)) doneTokens.set(code, new Set());
+      doneTokens.get(code).add(token);
+    }
+  };
+  for (const it of allIssues) addToken(it.title, it.state === "closed");
+  for (const pr of allMerged) addToken(pr.title, true); // 머지 = 완료
+
+  // 태그 없이 머지된 핵심 엔드포인트 보정
+  // (예: 이벤트 수집 API는 EVENT-001 태그 없이 "이벤트 수집 API"로 머지됨)
+  const KEYWORD_DONE = { EVENT: /\/api\/events|이벤트\s*수집/i };
+  for (const [code, re] of Object.entries(KEYWORD_DONE)) {
+    if (allMerged.some((pr) => re.test(pr.title))) {
+      if (!doneTokens.has(code)) doneTokens.set(code, new Set());
+      doneTokens.get(code).add(`${code}-KW`);
+    }
   }
 
   // 파트별 집계.
-  // - API 명세에 있는 파트: 분모 = endpoint 수, 분자 = 닫힌 이슈 수(분모로 cap).
-  //   이슈가 하나도 없어도 0/N 으로 포함한다.
-  // - 명세에 없는 파트(INFRA 등): 이슈 기준 그대로 표시(전체 집계에서는 제외).
+  // - API 명세에 있는 파트: 분모 = endpoint 수, 분자 = 완료 토큰 수(분모로 cap).
+  //   이슈/PR이 하나도 없어도 0/N 으로 포함한다.
+  // - 명세에 없는 파트(INFRA 등): 태그 기준 그대로 표시(전체 집계에서는 제외).
   const partsArr = [];
   let overallDone = 0;
   let overallTotal = 0;
   for (const [code, { name, total }] of planned) {
-    const closed = issueStats.get(code)?.done ?? 0;
-    const done = Math.min(closed, total);
+    const done = Math.min(doneTokens.get(code)?.size ?? 0, total);
     overallDone += done;
     overallTotal += total;
     partsArr.push({
@@ -170,14 +187,15 @@ async function main() {
       percent: total ? Math.round((done / total) * 100) : 0,
     });
   }
-  for (const [code, s] of issueStats) {
+  for (const [code, seen] of seenTokens) {
     if (planned.has(code)) continue;
+    const done = doneTokens.get(code)?.size ?? 0;
     partsArr.push({
       code,
       name: PART_LABELS[code] || code,
-      done: s.done,
-      total: s.total,
-      percent: s.total ? Math.round((s.done / s.total) * 100) : 0,
+      done,
+      total: seen.size,
+      percent: seen.size ? Math.round((done / seen.size) * 100) : 0,
     });
   }
   partsArr.sort((a, b) => b.total - a.total || a.code.localeCompare(b.code));
@@ -198,7 +216,7 @@ async function main() {
       done: overallDone,
       total: overallTotal,
       percent: overallPercent,
-      basis: "api-spec.json 전체 endpoint 대비 닫힌 이슈(파트별 cap)",
+      basis: "api-spec.json 전체 endpoint 대비 완료(닫힌 이슈 ∪ 머지 PR, 파트별 cap)",
     },
     parts: partsArr,
     recentMerged,
