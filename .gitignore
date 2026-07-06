@@ -7,8 +7,12 @@ Thumbs.db
 *.swo
 
 # Local AI agent instructions
+# Local AI agent instructions (SSOT + 세션 로그 + 개인 비전, 로컬 전용)
 CLAUDE.md
 AGENTS.md
+기획/sessions/
+기획/VISION.local.md
+기획/AI_레이어_아이디어.local.md
 
 # Environment
 .env
