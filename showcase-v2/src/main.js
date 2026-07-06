@@ -11,6 +11,9 @@ import { createSky } from "./scenes/sky.js";
 import { createClouds } from "./scenes/clouds.js";
 import { loadDuck } from "./scenes/duck.js";
 import { createAct1 } from "./acts/act1-skydive.js";
+import { createAct2 } from "./acts/act2-deck.js";
+import { createOverlay } from "./ui/overlay.js";
+import { buildDeckCards, loadJSON } from "./ui/panels.js";
 import { createLoading } from "./ui/loading.js";
 
 export const prefersReduced = window.matchMedia(
@@ -150,14 +153,24 @@ async function boot() {
     zDepth: 14, // 카메라가 내려다보는 낙하 컬럼 안에 배치
   });
 
-  // 덕식이 로드(loading.manager → 완료 시 로딩 스크린 자동 종료)
+  // 덕식이 로드(loading.manager → 완료 시 로딩 스크린 자동 종료) + 카드 데이터
   let duck = null;
   let act1 = null;
+  let act2 = null;
+  const overlay = createOverlay(camera);
   try {
-    duck = await loadDuck(loading.manager);
+    const [duckLoaded, teamRes, progressRes] = await Promise.all([
+      loadDuck(loading.manager),
+      loadJSON("data/team.json").catch(() => null),
+      loadJSON("data/progress.json").catch(() => null),
+    ]);
+    duck = duckLoaded;
     duck.setPose("skydive");
     scene.add(duck.group);
     act1 = createAct1({ camera, duck, clouds });
+    const cards = buildDeckCards({ team: teamRes, progress: progressRes });
+    act2 = createAct2({ camera, duck, clouds, overlay, cards });
+    scene.add(act2.group);
   } catch (err) {
     return useFallback(err);
   }
@@ -166,6 +179,8 @@ async function boot() {
     sky.update(dt);
     clouds.update(dt);
     act1?.tickFrame(dt, elapsed);
+    act2?.tickFrame(dt, elapsed);
+    overlay.update();
   });
 
   // --- 스크롤 배선: GSAP ScrollTrigger 스크럽 ---
@@ -185,9 +200,16 @@ async function boot() {
       segment(t, ACTS.arrival[0], 0.63) * (1 - segment(t, 0.66, 0.8))
     );
 
-    if (act === "skydive") act1?.update(p);
-    else if (lastAct === "skydive") act1?.leave();
-    // deck/arrival 카메라·연출은 Task 4~6에서 담당
+    if (act === "skydive") {
+      if (lastAct === "deck") act2?.leave(act);
+      act1?.update(p);
+    } else if (act === "deck") {
+      if (lastAct === "skydive") act1?.leave();
+      act2?.update(p);
+    } else {
+      // arrival — 카메라·연출은 Task 5~6에서 담당
+      if (lastAct === "deck") act2?.leave(act);
+    }
     lastAct = act;
     document.body.dataset.act = act;
   }
@@ -226,7 +248,7 @@ async function boot() {
   });
 
   // 디버그/프리뷰 검증용 핸들 (앱 로직은 의존하지 않음)
-  window.__sjd = { ...ctx, sky, clouds, duck, act1, state, updateFromScroll };
+  window.__sjd = { ...ctx, sky, clouds, duck, act1, act2, overlay, state, updateFromScroll };
 }
 
 boot();

@@ -284,3 +284,100 @@ html.no-webgl body {
     transition: none;
   }
 }
+
+/* --- ACT2 클라우드 덱 카드 (DOM 오버레이, 3D 앵커 동기화) --- */
+#overlay-root {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 5;
+}
+.deck-card {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: min(240px, 26vw);
+  background: var(--paper);
+  border: 1px solid var(--paper-border);
+  border-radius: 14px;
+  box-shadow: var(--shadow);
+  padding: 0.9rem 1rem;
+  pointer-events: auto;
+  transition: opacity 0.5s ease, margin-top 0.5s ease;
+  opacity: 1;
+  margin-top: 0;
+}
+.deck-card--hidden {
+  opacity: 0;
+  margin-top: 26px;
+  pointer-events: none;
+}
+.deck-card:hover {
+  box-shadow: 0 16px 44px rgba(11, 16, 38, 0.2), 0 3px 10px rgba(11, 16, 38, 0.1);
+}
+.deck-card__role {
+  font-size: 0.62rem;
+  color: var(--coral);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  margin: 0 0 0.25rem;
+}
+.deck-card__name {
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  margin: 0 0 0.25rem;
+  color: var(--ink);
+}
+.deck-card__line {
+  font-size: 0.8rem;
+  color: var(--ink-dim);
+  margin: 0;
+}
+.deck-card__sub {
+  font-size: 0.72rem;
+  color: var(--ink-dim);
+  margin: 0.35rem 0 0;
+}
+.deck-card__bar {
+  height: 7px;
+  border-radius: 999px;
+  background: #e4ecf6;
+  overflow: hidden;
+  margin-top: 0.55rem;
+}
+.deck-card__bar > span {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, var(--duck-soft, #ffc24b), var(--coral));
+  border-radius: inherit;
+}
+.deck-card__links {
+  display: flex;
+  gap: 0.5rem;
+  margin: 0.2rem 0 0;
+  flex-wrap: wrap;
+}
+.deck-card__links a {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--ink);
+  border: 1px solid var(--paper-border);
+  padding: 0.25rem 0.7rem;
+  border-radius: 999px;
+  text-decoration: none;
+}
+.deck-card__links a:hover {
+  background: var(--paper-soft);
+}
+@media (max-width: 640px) {
+  .deck-card {
+    width: min(190px, 44vw);
+    padding: 0.7rem 0.8rem;
+  }
+}
+
+/* 스크롤 힌트는 스카이다이브 막에서만 */
+body:not([data-act="skydive"]) #scroll-hint {
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
