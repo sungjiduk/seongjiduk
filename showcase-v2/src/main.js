@@ -9,6 +9,7 @@ import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
 import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
 import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
 import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
+import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { segment, actProgress, ACTS } from "./core/timeline.js";
@@ -115,7 +116,7 @@ export function initScene() {
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, isSmall ? 1.5 : 2)); // DPR cap
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.05;
+  renderer.toneMappingExposure = 1.12;
   renderer.shadowMap.enabled = !isSmall; // 모바일은 그림자 생략(성능)
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
@@ -128,6 +129,12 @@ export function initScene() {
   );
   camera.position.set(0, 0, 8);
   scene.add(camera); // 카메라 자식(화이트아웃 쿼드 등) 렌더를 위해 필수
+
+  // PBR 환경광: RoomEnvironment → PMREM (v1 hero.js 검증 패턴, 덕 텍스처/스페큘러 표현)
+  // 덕식이 쪽 envMapIntensity 0.8은 duck.js가 유지한다.
+  const pmrem = new THREE.PMREMGenerator(renderer);
+  scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+  pmrem.dispose();
 
   // 라이팅: 석양 키 + 하늘/지면 헤미 (마을·덕식이 공용 베이스)
   scene.add(new THREE.HemisphereLight(0xbfd9ff, 0x3a2c22, 0.7));
@@ -161,7 +168,7 @@ export function initScene() {
     composer.addPass(new RenderPass(scene, camera));
     const bloom = new UnrealBloomPass(
       new THREE.Vector2(window.innerWidth, window.innerHeight),
-      0.22, // strength — 창문·석양 하이라이트만 살짝
+      0.3, // strength — 창문·석양 하이라이트만 살짝
       0.55, // radius
       0.85 // threshold
     );

@@ -29,6 +29,14 @@ const PALETTE = {
   duckYellow: "#f5a80c",
   awnings: ["#c33f2e", "#f6e3cf", "#2e4a66"],
   vending: ["#c62f2f", "#2e5f9e", "#f6e3cf"],
+  // 여행지 무드(원경·참배로) 팔레트
+  fuji: "#7d8fb3",
+  fujiSnow: "#f2efe9",
+  hills: ["#93a3c0", "#a3b1c9", "#8a9ab8"],
+  stone: "#a9a294",
+  lanternRed: "#d93a2b",
+  lanternGlow: "#ff6a3d",
+  infoText: "#6b4a3a",
 };
 
 /** 간판 텍스트 — 아키하바라풍 세로 간판(캔버스 텍스처, 자체 발광) */
@@ -143,6 +151,58 @@ function makeSignTexture(def) {
     const chars = [...def.text];
     const step = 148 / chars.length;
     chars.forEach((ch, i) => ctx.fillText(ch, 32, 8 + step * (i + 0.5), 50));
+    const tex = new THREE.CanvasTexture(c);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    return tex;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * 가로형 관광 안내판 캔버스 텍스처 — makeSignTexture와 동일한 방어 규약.
+ * document가 없으면(node 스모크) null → 호출부가 단색 플레이스홀더 처리.
+ */
+function makeInfoTexture(text) {
+  if (typeof document === "undefined") return null;
+  try {
+    const c = document.createElement("canvas");
+    c.width = 256;
+    c.height = 88;
+    const ctx = c.getContext("2d");
+    if (!ctx) return null;
+    ctx.fillStyle = PALETTE.signBoard;
+    ctx.fillRect(0, 0, 256, 88);
+    ctx.strokeStyle = PALETTE.infoText;
+    ctx.lineWidth = 5;
+    ctx.strokeRect(6, 6, 244, 76);
+    ctx.fillStyle = PALETTE.infoText;
+    ctx.font = "700 32px Pretendard, sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(text, 128, 46, 232);
+    const tex = new THREE.CanvasTexture(c);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    return tex;
+  } catch {
+    return null;
+  }
+}
+
+/** 벚꽃잎 스프라이트 텍스처 — 부드러운 원형 그라디언트. document 없으면 null. */
+function makePetalTexture() {
+  if (typeof document === "undefined") return null;
+  try {
+    const c = document.createElement("canvas");
+    c.width = c.height = 32;
+    const ctx = c.getContext("2d");
+    if (!ctx) return null;
+    const g = ctx.createRadialGradient(16, 16, 2, 16, 16, 15);
+    g.addColorStop(0, "rgba(255,255,255,0.95)");
+    g.addColorStop(0.55, "rgba(255,214,228,0.8)");
+    g.addColorStop(1, "rgba(255,214,228,0)");
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, 32, 32);
     const tex = new THREE.CanvasTexture(c);
     tex.colorSpace = THREE.SRGBColorSpace;
     return tex;
@@ -416,10 +476,12 @@ export function buildVillage(scene) {
 
   // ── 가로수: 콘 2~3단 겹침 + 색 변주(녹색 2종 + 벚꽃 핑크) ──
   const TREE_COUNT = 22;
+  const APPROACH_TREES = 6; // 토리이 앞 참배로 벚꽃(별도 집중 배치)
+  const TREE_CAP = TREE_COUNT + APPROACH_TREES;
   const trunks = new THREE.InstancedMesh(
     new THREE.CylinderGeometry(0.12, 0.16, 0.9, 6),
     new THREE.MeshStandardMaterial({ color: PALETTE.trunk, roughness: 1, flatShading: true }),
-    TREE_COUNT
+    TREE_CAP
   );
   const leafTierGeos = [
     new THREE.ConeGeometry(0.8, 1.3, 7),
@@ -429,7 +491,7 @@ export function buildVillage(scene) {
   const leafTierY = [1.45, 2.05, 2.6];
   const leafMat = new THREE.MeshStandardMaterial({ roughness: 1, flatShading: true });
   const leafTiers = leafTierGeos.map((g, i) => {
-    const im = new THREE.InstancedMesh(g, leafMat, TREE_COUNT);
+    const im = new THREE.InstancedMesh(g, leafMat, TREE_CAP);
     im.name = `tree-leaves-${i + 1}`;
     return im;
   });
@@ -458,8 +520,8 @@ export function buildVillage(scene) {
       Q.identity();
       M.compose(V.set(x, 0.45 * s, z), Q, S.set(s, s, s));
       trunks.setMatrixAt(placed, M);
-      // 벚꽃 25%, 나머지는 녹색 2종 사이 변주
-      if (rand() < 0.25) base.copy(pink).lerp(tint, rand() * 0.25);
+      // 벚꽃 45%(여행지 무드), 나머지는 녹색 2종 사이 변주
+      if (rand() < 0.45) base.copy(pink).lerp(tint, rand() * 0.25);
       else base.copy(greenA).lerp(greenB, rand());
       const tiers = rand() < 0.4 ? 2 : 3; // 콘 2~3단
       for (let t = 0; t < leafTiers.length; t++) {
@@ -469,6 +531,29 @@ export function buildVillage(scene) {
         M.compose(V.set(x, yT * s, z), Q, S.set(sT, sT, sT));
         leafTiers[t].setMatrixAt(placed, M);
         // 위 단으로 갈수록 살짝 밝게 — 로우폴리 층 분리감
+        leafTiers[t].setColorAt(placed, c.copy(base).lerp(tint, t * 0.12));
+      }
+      placed++;
+    }
+    // 참배로 벚꽃: 토리이 직전(p 0.886~0.935) 양옆 쌍으로 집중 배치 — 항상 핑크
+    for (let i = 0; i < APPROACH_TREES && placed < TREE_CAP; i++) {
+      const p = 0.886 + (i >> 1) * 0.022 + rand() * 0.005;
+      const { pos: rp, tangent } = road.at(p);
+      const [nx, , nz] = sideNormal(tangent);
+      const side = i % 2 === 0 ? 1 : -1; // 좌우 쌍
+      const s = 0.65 + rand() * 0.2;
+      const dist = HALF_W + 0.8 * s + 0.35 + rand() * 0.25;
+      const x = rp[0] + nx * side * dist;
+      const z = rp[2] + nz * side * dist;
+      // 수관까지 노면 밖으로 — 침범 금지(S자 반대편 포함 재검사)
+      if (distToRoad(x, z) < HALF_W + 0.8 * s + 0.15) continue;
+      Q.identity();
+      M.compose(V.set(x, 0.45 * s, z), Q, S.set(s, s, s));
+      trunks.setMatrixAt(placed, M);
+      base.copy(pink).lerp(tint, rand() * 0.2);
+      for (let t = 0; t < leafTiers.length; t++) {
+        M.compose(V.set(x, leafTierY[t] * s, z), Q, S.set(s, s, s));
+        leafTiers[t].setMatrixAt(placed, M);
         leafTiers[t].setColorAt(placed, c.copy(base).lerp(tint, t * 0.12));
       }
       placed++;
@@ -781,6 +866,241 @@ export function buildVillage(scene) {
     heads.name = "pin-heads";
     tips.name = "pin-tips";
     group.add(heads, tips);
+  }
+
+  // ── 원경: 후지산 실루엣 + 능선 언덕 — 마을 바깥(z -60~-80), 포그 너머 은은히 ──
+  {
+    const fuji = new THREE.Mesh(
+      new THREE.ConeGeometry(24, 17, 14),
+      new THREE.MeshStandardMaterial({ color: PALETTE.fuji, roughness: 1, flatShading: true })
+    );
+    fuji.position.set(-16, 8.4, -70);
+    fuji.name = "fuji";
+    // 흰 눈 캡: 살짝 큰 반경의 짧은 콘을 정상에 겹침(z-fight 없이 덮임)
+    const snow = new THREE.Mesh(
+      new THREE.ConeGeometry(9.3, 6.3, 14),
+      new THREE.MeshStandardMaterial({ color: PALETTE.fujiSnow, roughness: 1, flatShading: true })
+    );
+    snow.position.set(-16, 13.8, -70);
+    snow.name = "fuji-snow";
+    group.add(fuji, snow);
+    // 능선 언덕: 낮고 넓은 콘 3개(채도 낮은 블루로 공기원근)
+    [
+      { x: 20, z: -64, r: 20, h: 5.6 },
+      { x: 46, z: -76, r: 24, h: 7.0 },
+      { x: -48, z: -78, r: 26, h: 6.2 },
+    ].forEach((hd, i) => {
+      const hill = new THREE.Mesh(
+        new THREE.ConeGeometry(hd.r, hd.h, 10),
+        new THREE.MeshStandardMaterial({
+          color: PALETTE.hills[i % PALETTE.hills.length],
+          roughness: 1,
+          flatShading: true,
+        })
+      );
+      hill.position.set(hd.x, hd.h / 2 - 0.2, hd.z);
+      hill.name = `hill-${i}`;
+      group.add(hill);
+    });
+  }
+
+  // ── 홍등 스트링: 도로를 가로지르는 축제 랜턴(전선 새그 + 빨간 홍등 emissive) ──
+  {
+    const spans = []; // { a: V3, b: V3 }
+    const postSpecs = [];
+    for (const p of [0.22, 0.52, 0.91]) {
+      const { pos: rp, tangent } = road.at(p);
+      const [nx, , nz] = sideNormal(tangent);
+      const ends = [];
+      for (const side of [1, -1]) {
+        const x = rp[0] + nx * side * 2.0;
+        const z = rp[2] + nz * side * 2.0;
+        if (distToRoad(x, z) < HALF_W + 0.3) break; // 반대편 노면 침범 시 스팬 포기
+        ends.push(new THREE.Vector3(x, 3.4, z));
+      }
+      if (ends.length < 2) continue;
+      postSpecs.push(...ends);
+      spans.push({ a: ends[0], b: ends[1] });
+    }
+    if (spans.length) {
+      const posts = new THREE.InstancedMesh(
+        new THREE.CylinderGeometry(0.05, 0.07, 3.4, 6),
+        new THREE.MeshStandardMaterial({ color: PALETTE.lampPole, roughness: 0.9, flatShading: true }),
+        postSpecs.length
+      );
+      Q.identity();
+      S.set(1, 1, 1);
+      postSpecs.forEach((pt, i) => {
+        M.compose(V.set(pt.x, 1.7, pt.z), Q, S);
+        posts.setMatrixAt(i, M);
+      });
+      posts.name = "lantern-posts";
+      group.add(posts);
+
+      // 전선: 스팬당 2차 베지에 새그(전신주 전선과 동일 패턴) → LineSegments 1드로우콜
+      const SEG = 10;
+      const SAG = 0.4;
+      const wirePts = [];
+      const mid = new THREE.Vector3();
+      const prev = new THREE.Vector3();
+      const cur = new THREE.Vector3();
+      const bezier = (span, t, out) =>
+        out
+          .copy(span.a)
+          .multiplyScalar((1 - t) * (1 - t))
+          .addScaledVector(mid, 2 * t * (1 - t))
+          .addScaledVector(span.b, t * t);
+      const lanternSpecs = [];
+      for (const span of spans) {
+        mid.lerpVectors(span.a, span.b, 0.5);
+        mid.y -= SAG;
+        for (let sIdx = 0; sIdx <= SEG; sIdx++) {
+          bezier(span, sIdx / SEG, cur);
+          if (sIdx > 0) wirePts.push(prev.x, prev.y, prev.z, cur.x, cur.y, cur.z);
+          prev.copy(cur);
+        }
+        // 홍등 3개/스팬: 전선 아래로 살짝 매달림
+        for (const t of [0.27, 0.5, 0.73]) {
+          bezier(span, t, cur);
+          lanternSpecs.push({ x: cur.x, y: cur.y - 0.24, z: cur.z });
+        }
+      }
+      const wireGeo = new THREE.BufferGeometry();
+      wireGeo.setAttribute("position", new THREE.BufferAttribute(new Float32Array(wirePts), 3));
+      const wires = new THREE.LineSegments(
+        wireGeo,
+        new THREE.LineBasicMaterial({ color: PALETTE.wire })
+      );
+      wires.name = "lantern-wires";
+      group.add(wires);
+
+      const lanterns = new THREE.InstancedMesh(
+        new THREE.SphereGeometry(0.17, 10, 8),
+        new THREE.MeshStandardMaterial({
+          color: PALETTE.lanternRed,
+          emissive: PALETTE.lanternGlow,
+          emissiveIntensity: 0.85,
+          roughness: 0.6,
+          flatShading: true,
+        }),
+        lanternSpecs.length
+      );
+      S.set(1, 1.25, 1); // 초롱 실루엣(세로로 살짝 김)
+      lanternSpecs.forEach((l, i) => {
+        M.compose(V.set(l.x, l.y, l.z), Q, S);
+        lanterns.setMatrixAt(i, M);
+      });
+      lanterns.name = "red-lanterns";
+      group.add(lanterns);
+    }
+  }
+
+  // ── 석등(石燈): 참배로(토리이 직전 p 0.888~0.93) 집중 + 도로변 일반 배치 ──
+  {
+    const specs = []; // { x, z, yaw, s }
+    const addLantern = (p, side, dist, s) => {
+      const { pos: rp, tangent } = road.at(p);
+      const [nx, , nz] = sideNormal(tangent);
+      const x = rp[0] + nx * side * dist;
+      const z = rp[2] + nz * side * dist;
+      if (distToRoad(x, z) < HALF_W + 0.35) return;
+      specs.push({ x, z, yaw: Math.atan2(rp[0] - x, rp[2] - z), s });
+    };
+    // 일반 4기(정거장 회피 지점, 좌우 교대)
+    for (const [p, side] of [[0.08, 1], [0.33, -1], [0.57, 1], [0.72, -1]])
+      addLantern(p + (rand() - 0.5) * 0.01, side, 2.1 + rand() * 0.3, 1.0 + rand() * 0.15);
+    // 참배로 6기: 양옆 쌍 — 벚꽃(안쪽 열)과 함께 짧은 참배로 느낌
+    for (let i = 0; i < 6; i++)
+      addLantern(0.888 + (i >> 1) * 0.021, i % 2 ? -1 : 1, 2.0, 1.1);
+    if (specs.length) {
+      const stoneMat = new THREE.MeshStandardMaterial({
+        color: PALETTE.stone,
+        roughness: 1,
+        flatShading: true,
+      });
+      const glowMat = new THREE.MeshBasicMaterial({ color: PALETTE.lampGlow });
+      const roofGeo = new THREE.ConeGeometry(0.4, 0.24, 4);
+      roofGeo.rotateY(Math.PI / 4); // 처마 모서리를 불집 면과 정렬
+      const parts = [
+        { geo: new THREE.BoxGeometry(0.5, 0.18, 0.5), y: 0.09, mat: stoneMat, nm: "base" },
+        { geo: new THREE.CylinderGeometry(0.09, 0.12, 0.55, 6), y: 0.455, mat: stoneMat, nm: "pillar" },
+        { geo: new THREE.BoxGeometry(0.34, 0.3, 0.34), y: 0.88, mat: stoneMat, nm: "firebox" },
+        { geo: new THREE.BoxGeometry(0.2, 0.14, 0.36), y: 0.88, mat: glowMat, nm: "glow" }, // 불빛 창(도로 방향 관통)
+        { geo: roofGeo, y: 1.15, mat: stoneMat, nm: "roof" },
+        { geo: new THREE.SphereGeometry(0.07, 6, 5), y: 1.32, mat: stoneMat, nm: "orb" },
+      ];
+      for (const part of parts) {
+        const im = new THREE.InstancedMesh(part.geo, part.mat, specs.length);
+        specs.forEach((sp, i) => {
+          Q.setFromAxisAngle(UP, sp.yaw);
+          M.compose(V.set(sp.x, part.y * sp.s, sp.z), Q, S.set(sp.s, sp.s, sp.s));
+          im.setMatrixAt(i, M);
+        });
+        im.name = `stone-lantern-${part.nm}`;
+        group.add(im);
+      }
+    }
+  }
+
+  // ── 관광 안내판: 가로형 캔버스 텍스처 보드(온천·신사 입구) ──
+  {
+    const defs = [
+      { text: "♨ 온천 200m", p: 0.3, side: -1 },
+      { text: "⛩ 신사 입구", p: 0.755, side: 1 },
+    ];
+    const poleGeo = new THREE.CylinderGeometry(0.05, 0.06, 1.5, 6);
+    const poleMat = new THREE.MeshStandardMaterial({ color: PALETTE.lampPole, roughness: 1 });
+    for (const def of defs) {
+      const { pos: rp, tangent } = road.at(def.p);
+      const [nx, , nz] = sideNormal(tangent);
+      const x = rp[0] + nx * def.side * 2.15;
+      const z = rp[2] + nz * def.side * 2.15;
+      if (distToRoad(x, z) < HALF_W + 0.3) continue;
+      const sign = new THREE.Group();
+      sign.name = `info-sign-${def.p}`;
+      const pole = new THREE.Mesh(poleGeo, poleMat);
+      pole.position.y = 0.75;
+      const tex = makeInfoTexture(def.text);
+      const board = new THREE.Mesh(
+        new THREE.BoxGeometry(1.45, 0.5, 0.06),
+        tex
+          ? new THREE.MeshBasicMaterial({ map: tex })
+          : new THREE.MeshBasicMaterial({ color: PALETTE.signBoard }) // node 스모크 플레이스홀더
+      );
+      board.position.y = 1.55;
+      sign.add(pole, board);
+      sign.position.set(x, 0, z);
+      sign.rotation.y = Math.atan2(rp[0] - x, rp[2] - z); // 판이 도로를 향하게
+      group.add(sign);
+    }
+  }
+
+  // ── 벚꽃잎 파티클: 은은히 흩날리는 핑크 스프라이트(정적 배치, userData.petals 노출) ──
+  {
+    const petals = new THREE.Group();
+    petals.name = "petals";
+    const mat = new THREE.SpriteMaterial({
+      color: PALETTE.leafPink,
+      map: makePetalTexture(),
+      transparent: true,
+      opacity: 0.85,
+      depthWrite: false,
+    });
+    const N = 16;
+    for (let i = 0; i < N; i++) {
+      // 후반 6장은 참배로(토리이 직전)에 집중
+      const p = i < 10 ? 0.08 + rand() * 0.78 : 0.88 + rand() * 0.055;
+      const { pos: rp, tangent } = road.at(p);
+      const [nx, , nz] = sideNormal(tangent);
+      const off = (rand() < 0.5 ? -1 : 1) * (0.4 + rand() * 2.6);
+      const sp = new THREE.Sprite(mat);
+      sp.position.set(rp[0] + nx * off, 0.5 + rand() * 2.4, rp[2] + nz * off);
+      const sc = 0.09 + rand() * 0.07;
+      sp.scale.set(sc, sc, 1);
+      petals.add(sp);
+    }
+    group.add(petals);
+    group.userData.petals = petals;
   }
 
   scene.add(group);
