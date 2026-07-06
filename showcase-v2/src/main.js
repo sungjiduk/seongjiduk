@@ -243,6 +243,7 @@ async function boot() {
     duck.setPose("skydive");
     scene.add(duck.group);
     act1 = createAct1({ camera, duck, clouds });
+    scene.add(act1.group); // 오프닝 경비행기 소품
     const cards = buildDeckCards({ team: teamRes, progress: progressRes });
     act2 = createAct2({ camera, duck, clouds, overlay, cards });
     scene.add(act2.group);
