@@ -224,6 +224,12 @@
 .station-panel--finale .deck-card__links {
   justify-content: center;
 }
+.station-panel__loop {
+  margin: 10px 0 0;
+  font-size: 11px;
+  letter-spacing: 0.4px;
+  opacity: 0.55;
+}
 
 /* no-webgl 폴백: 패널을 정적 문서 흐름으로 */
 .fallback-stack {
@@ -243,3 +249,17 @@
   pointer-events: auto;
   margin-top: 0;
 }
+
+/* 여정 진행 바 */
+#journey-bar {
+  position: fixed;
+  left: 0;
+  bottom: 0;
+  height: 4px;
+  width: 0;
+  background: linear-gradient(90deg, #f5a80c, #e8395f);
+  border-radius: 0 3px 3px 0;
+  z-index: 12;
+  pointer-events: none;
+}
+html.no-webgl #journey-bar { display: none; }

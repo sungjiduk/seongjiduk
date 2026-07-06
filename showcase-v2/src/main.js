@@ -9,6 +9,7 @@ import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
 import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
 import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
 import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
+import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { segment, actProgress, ACTS } from "./core/timeline.js";
@@ -115,7 +116,7 @@ export function initScene() {
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, isSmall ? 1.5 : 2)); // DPR cap
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.05;
+  renderer.toneMappingExposure = 1.02;
   renderer.shadowMap.enabled = !isSmall; // 모바일은 그림자 생략(성능)
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
@@ -128,6 +129,13 @@ export function initScene() {
   );
   camera.position.set(0, 0, 8);
   scene.add(camera); // 카메라 자식(화이트아웃 쿼드 등) 렌더를 위해 필수
+
+  // PBR 환경광: RoomEnvironment → PMREM (v1 hero.js 검증 패턴, 덕 텍스처/스페큘러 표현)
+  // 덕식이 쪽 envMapIntensity 0.8은 duck.js가 유지한다.
+  const pmrem = new THREE.PMREMGenerator(renderer);
+  scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+  scene.environmentIntensity = 0.35; // 워시아웃 방지 — 은은한 반사만
+  pmrem.dispose();
 
   // 라이팅: 석양 키 + 하늘/지면 헤미 (마을·덕식이 공용 베이스)
   scene.add(new THREE.HemisphereLight(0xbfd9ff, 0x3a2c22, 0.7));
@@ -161,9 +169,9 @@ export function initScene() {
     composer.addPass(new RenderPass(scene, camera));
     const bloom = new UnrealBloomPass(
       new THREE.Vector2(window.innerWidth, window.innerHeight),
-      0.22, // strength — 창문·석양 하이라이트만 살짝
+      0.16, // strength — 창문·석양 하이라이트만 살짝
       0.55, // radius
-      0.85 // threshold
+      0.9 // threshold
     );
     composer.addPass(bloom);
     composer.addPass(new OutputPass());
@@ -243,6 +251,7 @@ async function boot() {
     duck.setPose("skydive");
     scene.add(duck.group);
     act1 = createAct1({ camera, duck, clouds });
+    scene.add(act1.group); // 오프닝 경비행기 소품
     const cards = buildDeckCards({ team: teamRes, progress: progressRes });
     act2 = createAct2({ camera, duck, clouds, overlay, cards });
     scene.add(act2.group);
@@ -287,6 +296,15 @@ async function boot() {
   }
 
   tick((dt, elapsed) => {
+    // 스크롤 감쇠 보간: 휠 스텝을 매 프레임 부드럽게 따라감 (턱턱 끊김 제거)
+    if (!prefersReduced && scrollTarget > 0.9995 && state.t > 0.993) {
+      // 무한 루프: 비행기 상승 화이트아웃 속에서 처음(기체 탑승)으로 점프
+      window.scrollTo(0, 0);
+      scrollTarget = 0;
+      updateFromScroll(0);
+    } else if (!prefersReduced && Math.abs(scrollTarget - state.t) > 0.00005) {
+      updateFromScroll(state.t + (scrollTarget - state.t) * Math.min(1, dt * 3.2));
+    }
     sky.update(dt);
     clouds.update(dt);
     act1?.tickFrame(dt, elapsed);
@@ -297,6 +315,13 @@ async function boot() {
 
   // --- 스크롤 배선: GSAP ScrollTrigger 스크럽 ---
   const state = { t: 0 };
+  let scrollTarget = 0;
+  // 여정 진행 바 (하단 고정, 현재 위치 감각 제공)
+  const jbar = document.createElement("div");
+  jbar.id = "journey-bar";
+  jbar.setAttribute("aria-hidden", "true");
+  document.body.appendChild(jbar);
+  const sunnyHaze = new THREE.Color("#f2dfc8"); // 맑은 석양 지평선 헤이즈
   let lastAct = "skydive";
   function updateFromScroll(t) {
     state.t = t;
@@ -305,12 +330,21 @@ async function boot() {
     sky.setBlend(0.12 * (1 - segment(t, 0, ACTS.deck[1])));
     // 구름: 낙하 내내 짙고, 덱에서 최대, 화이트아웃 뒤 마을에선 걷힘
     clouds.setDensity(
-      0.7 + 0.3 * segment(t, 0, ACTS.deck[1]) - segment(t, 0.68, 0.85)
+      0.7 + 0.3 * segment(t, 0, ACTS.deck[1]) - segment(t, 0.58, 0.65)
     );
     // ACT3 진입 화이트아웃: 0.55 부근 급증 → 마을 페이드 인
     clouds.whiteout(
-      segment(t, ACTS.arrival[0], 0.63) * (1 - segment(t, 0.66, 0.8))
+      segment(t, ACTS.arrival[0], 0.595) * (1 - segment(t, 0.60, 0.645))
     );
+    // 구름 아래는 맑음: 화이트아웃이 걷히면 포그를 멀리 밀어 마을이 쨍하게
+    if (scene.fog) {
+      const sunny = segment(t, 0.60, 0.65);
+      if (sunny > 0) {
+        scene.fog.near = THREE.MathUtils.lerp(scene.fog.near, 40, sunny);
+        scene.fog.far = THREE.MathUtils.lerp(scene.fog.far, 170, sunny);
+        scene.fog.color.lerp(sunnyHaze, sunny); // 옅은 웜톤 지평선 헤이즈
+      }
+    }
 
     // 막 전환은 인접 이동뿐 아니라 점프(빠른 스크롤/앵커)도 가능 — 이전 막을 항상 정리
     const actsMap = { skydive: act1, deck: act2, arrival: act3 };
@@ -319,6 +353,7 @@ async function boot() {
     lastAct = act;
     document.body.dataset.act = act;
     sound.setAct(act);
+    jbar.style.width = `${(t * 100).toFixed(2)}%`;
   }
 
   if (!prefersReduced) {
@@ -327,9 +362,9 @@ async function boot() {
       trigger: "#scroll-space",
       start: "top top",
       end: "bottom bottom",
-      scrub: 0.6,
+      scrub: true, // 관성 있는 따라잡기 — 휠을 놓아도 부드럽게 이어짐
       invalidateOnRefresh: true,
-      onUpdate: (self) => updateFromScroll(self.progress),
+      onUpdate: (self) => { scrollTarget = self.progress; },
     });
     // 비동기 DOM 높이 변화(패널 렌더 등) → 스크롤 범위 재측정 (v1 교훈)
     const refresh = () => ScrollTrigger.refresh();

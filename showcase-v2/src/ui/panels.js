@@ -206,5 +206,6 @@ export function buildFinalePanel(links = {}) {
         ${links.backend ? `<a href="${escapeHtml(links.backend)}" rel="noopener" target="_blank">Backend</a>` : ""}
         ${links.swagger ? `<a href="${escapeHtml(links.swagger)}" rel="noopener" target="_blank">Swagger</a>` : ""}
       </p>
+      <p class="station-panel__loop mono">잠시 후 덕식이가 다시 이륙합니다 ↺</p>
     </section>`);
 }
