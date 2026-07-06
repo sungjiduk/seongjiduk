@@ -111,7 +111,7 @@ export function createAct3({ camera, duck, clouds, overlay, village, road, bicyc
     if (panels.FINALE) {
       const fw =
         THREE.MathUtils.clamp((rideP - 0.7) / 0.08, 0, 1) *
-        (1 - segment(p, 0.885, 0.92)); // 도착 직후 떠서, 비행기 픽업 전에 사라짐
+        (1 - segment(p, 0.86, 0.895)); // 픽업 비행기 등장(0.90) 전에 완전히 사라짐
       panels.FINALE.style.opacity = String(fw);
       panels.FINALE.style.pointerEvents = fw > 0.5 ? "auto" : "none";
     }
@@ -159,6 +159,11 @@ export function createAct3({ camera, duck, clouds, overlay, village, road, bicyc
     for (const st of village.stations) {
       const el = panels[st.name];
       if (el) el.style.opacity = "0";
+    }
+    // 피날레 CTA도 반드시 리셋 — 역스크롤/루프로 이탈 시 문구가 다른 막 위에 잔존하던 버그
+    if (panels.FINALE) {
+      panels.FINALE.style.opacity = "0";
+      panels.FINALE.style.pointerEvents = "none";
     }
   }
 
