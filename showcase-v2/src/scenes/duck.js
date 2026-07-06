@@ -31,25 +31,24 @@ function buildGoggles() {
     roughness: 0.7,
   });
 
-  // 그룹 원점 = 머리 중심. 렌즈는 앞(+Z), 밴드는 머리를 수평으로 감는다.
+  // 그룹 원점 = 머리 중심. 스키고글: 크고 두꺼운 렌즈 컵 + 넓은 브릿지 (안경처럼 얇으면 안 됨)
   const FRONT = 0.42; // 머리 반지름 근사
-  const rimGeo = new THREE.TorusGeometry(0.15, 0.032, 10, 24);
-  const lensGeo = new THREE.CircleGeometry(0.14, 24);
+  const rimGeo = new THREE.TorusGeometry(0.2, 0.055, 12, 26);
+  const lensGeo = new THREE.CircleGeometry(0.19, 26);
+  lensMat.opacity = 0.62;
+  lensMat.color.set(0x5fb6e8);
   for (const sx of [-1, 1]) {
     const rim = new THREE.Mesh(rimGeo, rimMat);
-    rim.position.set(sx * 0.165, 0, FRONT);
+    rim.position.set(sx * 0.21, 0, FRONT);
+    rim.scale.z = 1.6; // 고글 컵 깊이감
     g.add(rim);
     const lens = new THREE.Mesh(lensGeo, lensMat);
-    lens.position.set(sx * 0.165, 0, FRONT - 0.01);
+    lens.position.set(sx * 0.21, 0, FRONT + 0.02);
     g.add(lens);
   }
-  // 브릿지
-  const bridge = new THREE.Mesh(
-    new THREE.CapsuleGeometry(0.026, 0.05, 4, 8),
-    rimMat
-  );
-  bridge.rotation.z = Math.PI / 2;
-  bridge.position.set(0, 0, FRONT + 0.02);
+  // 넓은 브릿지(고글 프레임 느낌)
+  const bridge = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.11, 0.07), rimMat);
+  bridge.position.set(0, 0, FRONT + 0.03);
   g.add(bridge);
   // 머리를 수평으로 감는 스트랩(풀 토러스, 살짝 납작)
   const band = new THREE.Mesh(
@@ -60,6 +59,48 @@ function buildGoggles() {
   band.scale.set(1, 1, 0.92);
   g.add(band);
 
+  return g;
+}
+
+/** 낙하산: 덕 옐로우 캐노피(반구) + 코럴 패널 + 산줄 6가닥 */
+function buildParachute() {
+  const g = new THREE.Group();
+  g.name = "parachute";
+  const R = 1.7;
+  const canopy = new THREE.Mesh(
+    new THREE.SphereGeometry(R, 14, 7, 0, Math.PI * 2, 0, Math.PI / 2),
+    new THREE.MeshStandardMaterial({
+      color: 0xf5a80c,
+      emissive: 0xf5a80c,
+      emissiveIntensity: 0.28, // 역광 밑면도 옐로우로 읽히게
+      roughness: 0.75,
+      side: THREE.DoubleSide,
+    })
+  );
+  canopy.scale.y = 0.62;
+  g.add(canopy);
+  // 코럴 세로 패널 4장 (살짝 띄워 겹침)
+  for (let i = 0; i < 4; i++) {
+    const p = new THREE.Mesh(
+      new THREE.SphereGeometry(R + 0.015, 14, 7, (i * Math.PI) / 2, Math.PI / 6, 0, Math.PI / 2),
+      new THREE.MeshStandardMaterial({ color: 0xe8395f, emissive: 0xe8395f, emissiveIntensity: 0.28, roughness: 0.75, side: THREE.DoubleSide })
+    );
+    p.scale.y = 0.62;
+    g.add(p);
+  }
+  // 산줄: 캐노피 림 → 하네스 지점
+  const pts = [];
+  for (let i = 0; i < 6; i++) {
+    const a = (i / 6) * Math.PI * 2;
+    pts.push(new THREE.Vector3(Math.cos(a) * R * 0.92, -0.1, Math.sin(a) * R * 0.92));
+    pts.push(new THREE.Vector3(0, -2.1, 0));
+  }
+  g.add(
+    new THREE.LineSegments(
+      new THREE.BufferGeometry().setFromPoints(pts),
+      new THREE.LineBasicMaterial({ color: 0xdcd6c9 })
+    )
+  );
   return g;
 }
 
@@ -104,6 +145,12 @@ export function loadDuck(manager) {
         group.name = "duck";
         group.add(pivot);
 
+        // 낙하산 (덱 진입 전 전개 — 표시/스케일은 act1이 제어)
+        const parachute = buildParachute();
+        parachute.position.set(0, 2.35, 0);
+        parachute.visible = false;
+        group.add(parachute);
+
         function setPose(name) {
           group.userData.pose = name;
           if (name === "skydive") {
@@ -111,17 +158,19 @@ export function loadDuck(manager) {
             pivot.rotation.set(Math.PI * 0.45, 0, 0);
             goggles.visible = true;
           } else if (name === "ride") {
+            parachute.visible = false;
             // 자전거 안장 기준 직립 + 살짝 앞 기울임. 고글 해제.
             pivot.rotation.set(-0.12, 0, 0);
             goggles.visible = false;
           } else {
             pivot.rotation.set(0, 0, 0);
             goggles.visible = false;
+            parachute.visible = false;
           }
         }
         setPose("stand");
 
-        resolve({ group, model, pivot, goggles, setPose });
+        resolve({ group, model, pivot, goggles, parachute, setPose });
       },
       undefined,
       reject

@@ -306,15 +306,15 @@ async function boot() {
     sky.setBlend(0.12 * (1 - segment(t, 0, ACTS.deck[1])));
     // 구름: 낙하 내내 짙고, 덱에서 최대, 화이트아웃 뒤 마을에선 걷힘
     clouds.setDensity(
-      0.7 + 0.3 * segment(t, 0, ACTS.deck[1]) - segment(t, 0.68, 0.85)
+      0.7 + 0.3 * segment(t, 0, ACTS.deck[1]) - segment(t, 0.60, 0.68)
     );
     // ACT3 진입 화이트아웃: 0.55 부근 급증 → 마을 페이드 인
     clouds.whiteout(
-      segment(t, ACTS.arrival[0], 0.63) * (1 - segment(t, 0.66, 0.8))
+      segment(t, ACTS.arrival[0], 0.63) * (1 - segment(t, 0.61, 0.665))
     );
     // 구름 아래는 맑음: 화이트아웃이 걷히면 포그를 멀리 밀어 마을이 쨍하게
     if (scene.fog) {
-      const sunny = segment(t, 0.68, 0.84);
+      const sunny = segment(t, 0.62, 0.70);
       if (sunny > 0) {
         scene.fog.near = THREE.MathUtils.lerp(scene.fog.near, 40, sunny);
         scene.fog.far = THREE.MathUtils.lerp(scene.fog.far, 170, sunny);

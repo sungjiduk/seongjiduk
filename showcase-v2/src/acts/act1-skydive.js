@@ -17,13 +17,27 @@ export function createAct1({ camera, duck, clouds }) {
   let localP = 0;
   let active = false;
 
+  const DEPLOY_AT = 0.72; // 팀 소개(덱) 직전 낙하산 전개
+  let chuteScale = 0;
+
   /** 스크롤 진행(막 로컬 p 0..1) 반영 */
   function update(p) {
     localP = p;
     active = true;
-    // 낙하 속도: 초반 가속 → 덱 접근(p→1)에서 감속
-    const speed = 7 * Math.min(1, p * 4 + 0.25) * (1 - 0.85 * p * p);
-    clouds.setFall(speed);
+    const chute = duck.parachute;
+    if (p >= DEPLOY_AT) {
+      // 전개: 급감속 (구름 스크롤 뚝 떨어짐)
+      if (chute && !chute.visible) {
+        chute.visible = true;
+        chuteScale = 0.05;
+      }
+      clouds.setFall(2.2 * (1 - p) + 0.8);
+    } else {
+      if (chute) chute.visible = false;
+      chuteScale = 0;
+      // 자유낙하: 초반부터 빠르게 (점프 직후 가속감)
+      clouds.setFall(12 * Math.min(1, p * 5 + 0.35));
+    }
   }
 
   /** 막을 벗어날 때(덱 진입) 잔여 상태 정리 */
@@ -45,8 +59,18 @@ export function createAct1({ camera, duck, clouds }) {
     g.position.y = -smooth.y * 0.6 + Math.sin(elapsed * 1.1) * 0.12;
     g.position.z = 0;
     g.rotation.z = -smooth.x * 0.55 + Math.sin(elapsed * 0.7) * 0.05;
-    duck.pivot.rotation.x =
-      Math.PI * 0.45 + smooth.y * 0.2 + Math.sin(elapsed * 0.9) * 0.04;
+    // 낙하산 전개 후: 직립으로 세워지고 캐노피가 팝(스케일 스프링)
+    const deployed = duck.parachute?.visible;
+    const targetPitch = deployed ? 0.12 : Math.PI * 0.45;
+    duck.pivot.rotation.x +=
+      (targetPitch + smooth.y * 0.2 + Math.sin(elapsed * 0.9) * 0.04 -
+        duck.pivot.rotation.x) *
+      Math.min(1, dt * 6);
+    if (deployed && chuteScale < 1) {
+      chuteScale = Math.min(1, chuteScale + dt * 3.2);
+      const s = 1 + Math.sin(chuteScale * Math.PI) * 0.18; // 오버슈트 팝
+      duck.parachute.scale.setScalar(chuteScale * s);
+    }
 
     // 카메라: 측하단에서 헤드다운 다이빙을 올려다봄 — 고글·하늘·구름이 모두 프레임에
     // 좁은 화면(모바일)에선 뒤로 물러나 덕식이가 프레임을 다 채우지 않게
