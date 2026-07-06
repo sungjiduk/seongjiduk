@@ -49,7 +49,13 @@ export function createAct1({ camera, duck, clouds }) {
       Math.PI * 0.45 + smooth.y * 0.2 + Math.sin(elapsed * 0.9) * 0.04;
 
     // 카메라: 측하단에서 헤드다운 다이빙을 올려다봄 — 고글·하늘·구름이 모두 프레임에
-    camera.position.set(0.9 + smooth.x * 0.5, -2.3 - localP * 0.4, 3.5);
+    // 좁은 화면(모바일)에선 뒤로 물러나 덕식이가 프레임을 다 채우지 않게
+    const mob = window.innerWidth <= 640 ? 1 : 0;
+    camera.position.set(
+      0.9 + smooth.x * 0.5,
+      -2.3 - localP * 0.4 - mob * 0.7,
+      3.5 + mob * 2.4
+    );
     lookTarget.set(g.position.x, g.position.y - 0.3, 0);
     camera.lookAt(lookTarget);
   }

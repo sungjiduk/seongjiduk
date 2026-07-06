@@ -45,13 +45,39 @@ function hasWebGL() {
   }
 }
 
-/** WebGL 불가/로드 실패 → DOM 전용 문서 모드 */
+/** WebGL 불가/로드 실패 → DOM 전용 문서 모드 (콘텐츠는 정적 패널로 전부 렌더) */
+let fallbackRendered = false;
 export function useFallback(reason) {
   console.warn("3D 여정 폴백:", reason);
   document.documentElement.classList.remove("scene-ready");
   document.documentElement.classList.add("no-webgl", "loading-done");
   const fallback = document.getElementById("fallback");
   if (fallback) fallback.hidden = false;
+  renderFallbackContent(fallback);
+}
+
+async function renderFallbackContent(container) {
+  if (!container || fallbackRendered) return;
+  fallbackRendered = true;
+  const [team, progress, schedule, apiSpec, ts] = await Promise.all(
+    ["team", "progress", "schedule", "api-spec", "troubleshooting"].map((n) =>
+      loadJSON(`data/${n}.json`).catch(() => null)
+    )
+  );
+  const stack = document.createElement("div");
+  stack.className = "fallback-stack";
+  for (const card of buildDeckCards({ team, progress })) stack.appendChild(card.el);
+  const panels = buildStationPanels({
+    schedule,
+    progress,
+    apiSpec,
+    troubleshooting: ts,
+  });
+  for (const key of ["PLAN", "PROGRESS", "API", "TS"]) {
+    if (panels[key]) stack.appendChild(panels[key]);
+  }
+  stack.appendChild(buildFinalePanel(team?.project?.links));
+  container.appendChild(stack);
 }
 
 /**

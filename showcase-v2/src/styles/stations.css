@@ -224,3 +224,22 @@
 .station-panel--finale .deck-card__links {
   justify-content: center;
 }
+
+/* no-webgl 폴백: 패널을 정적 문서 흐름으로 */
+.fallback-stack {
+  display: grid;
+  gap: 1rem;
+  margin-top: 1.2rem;
+  justify-items: stretch;
+}
+.fallback-stack .deck-card,
+.fallback-stack .station-panel {
+  position: static;
+  opacity: 1;
+  transform: none;
+  visibility: visible;
+  width: 100%;
+  max-height: none;
+  pointer-events: auto;
+  margin-top: 0;
+}
