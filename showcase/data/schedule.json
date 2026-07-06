@@ -1,0 +1,12 @@
+{
+  "period": { "start": "2026-06-29", "end": "2026-07-10" },
+  "presentation": "2026-07-10",
+  "legs": [
+    { "date": "2026-06-29", "range": "06/29–06/30", "label": "아이디어 확정 · 기획/ERD/API 초안 · 스택 ADR", "done": true },
+    { "date": "2026-07-01", "range": "07/01–07/03", "label": "회원/인증 · 핵심 도메인 CRUD", "done": true },
+    { "date": "2026-07-04", "range": "07/04–07/06", "label": "AI 에이전트 · 관리자 통계", "done": false },
+    { "date": "2026-07-07", "range": "07/07–07/08", "label": "Docker/CI·CD · 클라우드 배포 · HTTPS · 모니터링", "done": false },
+    { "date": "2026-07-09", "range": "07/09", "label": "통합 테스트 · 트러블슈팅 정리 · 발표자료", "done": false },
+    { "date": "2026-07-10", "range": "07/10", "label": "발표", "done": false }
+  ]
+}

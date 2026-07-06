@@ -1,0 +1,77 @@
+{
+  "updatedAt": "2026-07-03T13:38:33.019Z",
+  "repos": [
+    "sungjiduk/seongjiduk-backend"
+  ],
+  "overall": {
+    "done": 8,
+    "total": 10,
+    "percent": 80
+  },
+  "parts": [
+    {
+      "code": "TRIP",
+      "name": "여행 일정",
+      "done": 8,
+      "total": 8,
+      "percent": 100
+    },
+    {
+      "code": "AUTH",
+      "name": "인증",
+      "done": 0,
+      "total": 2,
+      "percent": 0
+    }
+  ],
+  "recentMerged": [
+    {
+      "number": 24,
+      "title": "[FEAT] 이벤트 수집 API (POST /api/events) 구현",
+      "mergedAt": "2026-07-03T13:29:09Z",
+      "repo": "sungjiduk/seongjiduk-backend"
+    },
+    {
+      "number": 23,
+      "title": "[FEAT] TRIP-002 일정 재생성 API 구현",
+      "mergedAt": "2026-07-03T09:07:05Z",
+      "repo": "sungjiduk/seongjiduk-backend"
+    },
+    {
+      "number": 22,
+      "title": "[FEAT] TRIP-007 일정 공유 API 구현",
+      "mergedAt": "2026-07-03T09:01:52Z",
+      "repo": "sungjiduk/seongjiduk-backend"
+    },
+    {
+      "number": 21,
+      "title": "[FEAT] TRIP-006 일정 삭제 API 구현",
+      "mergedAt": "2026-07-03T08:41:51Z",
+      "repo": "sungjiduk/seongjiduk-backend"
+    },
+    {
+      "number": 20,
+      "title": "[FEAT] Swagger Bearer(JWT) Authorize 추가",
+      "mergedAt": "2026-07-03T07:05:44Z",
+      "repo": "sungjiduk/seongjiduk-backend"
+    },
+    {
+      "number": 19,
+      "title": "[FIX] Flyway MySQL 미지원 해결 (flyway-mysql 추가)",
+      "mergedAt": "2026-07-03T06:59:05Z",
+      "repo": "sungjiduk/seongjiduk-backend"
+    },
+    {
+      "number": 17,
+      "title": "[FEAT] TRIP-004 내 일정 목록 조회 API 구현",
+      "mergedAt": "2026-07-03T06:08:35Z",
+      "repo": "sungjiduk/seongjiduk-backend"
+    },
+    {
+      "number": 18,
+      "title": "[FIX] Swagger UI /swagger-ui.html 403 해결",
+      "mergedAt": "2026-07-03T06:07:04Z",
+      "repo": "sungjiduk/seongjiduk-backend"
+    }
+  ]
+}

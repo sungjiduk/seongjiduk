@@ -1,0 +1,675 @@
+/* 성지덕 쇼케이스 — 항공 여정 디자인 토큰 & 레이아웃 */
+
+:root {
+  /* 하늘/고도 컬러 토큰 (스펙 §1) */
+  --sky-dawn: #eaf3fb;
+  --sky-mid: #7fb2e6;
+  --altitude: #1b2a4a;
+  --space: #0b1026;
+
+  /* 포인트 */
+  --duck: #ffc24b; /* 부리 옐로우, 시그니처 */
+  --coral: #ff5a7a; /* CTA/강조 */
+
+  /* 텍스트 (배경 구간에 따라 --ink 가 전환됨) */
+  --ink-sky: #0b1026;
+  --ink-space: #eaf3fb;
+  --ink: var(--ink-sky);
+  --ink-dim: color-mix(in srgb, var(--ink) 62%, transparent);
+  --card: color-mix(in srgb, var(--ink) 5%, transparent);
+  --card-border: color-mix(in srgb, var(--ink) 16%, transparent);
+
+  /* 메서드 색상 (노선도) */
+  --m-get: #3aa0ff;
+  --m-post: #34c98a;
+  --m-patch: #ffb020;
+  --m-delete: #ff5a7a;
+
+  --font-display: "Space Grotesk", "Pretendard", system-ui, sans-serif;
+  --font-body: "Pretendard", "Inter", system-ui, sans-serif;
+  --font-mono: "Space Mono", ui-monospace, "SFMono-Regular", monospace;
+
+  --maxw: 960px;
+  --radius: 14px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-body);
+  color: var(--ink);
+  background: var(--space);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  transition: color 0.6s ease;
+}
+
+.mono {
+  font-family: var(--font-mono);
+  letter-spacing: 0.02em;
+}
+.display {
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.05;
+}
+
+/* --- 배경: 스크롤 구간에 따라 전이 --- */
+.sky-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  background: linear-gradient(180deg, var(--sky-dawn), var(--sky-mid));
+  transition: background 0.8s ease;
+}
+body[data-zone="dawn"] .sky-backdrop {
+  background: linear-gradient(180deg, var(--sky-dawn) 0%, var(--sky-mid) 100%);
+}
+body[data-zone="mid"] .sky-backdrop {
+  background: linear-gradient(180deg, var(--sky-mid) 0%, var(--altitude) 100%);
+}
+body[data-zone="altitude"] .sky-backdrop {
+  background: linear-gradient(180deg, var(--altitude) 0%, var(--space) 100%);
+}
+body[data-zone="space"] .sky-backdrop {
+  background: radial-gradient(
+    1200px 800px at 70% 20%,
+    #16204a 0%,
+    var(--space) 60%
+  );
+}
+/* 우주/고도 구간에서 잉크 반전 */
+body[data-zone="altitude"],
+body[data-zone="space"] {
+  --ink: var(--ink-space);
+}
+
+/* --- 히어로 캔버스 스테이지 --- */
+.hero-stage {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+}
+#hero-canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.hero-fallback {
+  position: absolute;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+}
+.hero-fallback__duck {
+  width: min(38vw, 200px);
+  height: auto;
+  filter: drop-shadow(0 18px 30px rgba(11, 16, 38, 0.35));
+  animation: bob 4s ease-in-out infinite;
+}
+@keyframes bob {
+  0%,
+  100% {
+    transform: translateY(0) rotate(-2deg);
+  }
+  50% {
+    transform: translateY(-14px) rotate(2deg);
+  }
+}
+/* 3D 실패/reduced-motion 시 폴백 표시 */
+.no-webgl .hero-fallback,
+.reduced .hero-fallback {
+  display: flex;
+}
+.no-webgl #hero-canvas,
+.reduced #hero-canvas {
+  display: none;
+}
+
+/* --- 접근성: 스킵 링크 --- */
+.skip-link {
+  position: absolute;
+  left: -999px;
+  top: 0;
+  background: var(--duck);
+  color: #0b1026;
+  padding: 0.5rem 1rem;
+  border-radius: 0 0 8px 0;
+  z-index: 20;
+}
+.skip-link:focus {
+  left: 0;
+}
+
+/* --- 상단바 --- */
+.topbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.9rem 1.4rem;
+  z-index: 10;
+  mix-blend-mode: difference;
+  color: #fff;
+}
+.topbar__brand {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+.topbar__flight {
+  font-size: 0.75rem;
+  opacity: 0.85;
+}
+
+/* --- 섹션 공통 --- */
+.section {
+  position: relative;
+  padding: clamp(4rem, 12vh, 9rem) 1.4rem;
+}
+.section--hero {
+  min-height: 100svh;
+  display: flex;
+  align-items: center;
+}
+.section__inner {
+  max-width: var(--maxw);
+  margin: 0 auto;
+  width: 100%;
+}
+.leg-tag {
+  font-size: 0.78rem;
+  color: var(--coral);
+  font-weight: 700;
+  margin: 0 0 0.6rem;
+}
+.section-title {
+  font-size: clamp(1.9rem, 5vw, 3.1rem);
+  margin: 0 0 0.6rem;
+}
+.section-desc {
+  color: var(--ink-dim);
+  max-width: 46ch;
+  margin: 0 0 2rem;
+}
+
+/* --- 히어로 카피 --- */
+.hero-copy {
+  max-width: 640px;
+}
+.hero-title {
+  font-size: clamp(2.6rem, 9vw, 5rem);
+  margin: 0 0 1rem;
+}
+.hero-lead {
+  font-size: clamp(1.05rem, 2.4vw, 1.4rem);
+  font-weight: 600;
+  margin: 0 0 0.4rem;
+}
+.hero-oneliner {
+  color: var(--ink-dim);
+  max-width: 44ch;
+  margin: 0 0 2rem;
+}
+.scroll-hint {
+  display: inline-block;
+  color: var(--ink);
+  text-decoration: none;
+  font-size: 0.85rem;
+  border: 1px solid var(--card-border);
+  padding: 0.55rem 1rem;
+  border-radius: 999px;
+  animation: nudge 2.4s ease-in-out infinite;
+}
+@keyframes nudge {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(6px);
+  }
+}
+
+/* --- scroll reveal --- */
+.reveal {
+  opacity: 0;
+  transform: translateY(28px);
+  transition: opacity 0.7s ease, transform 0.7s ease;
+}
+.reveal.is-in {
+  opacity: 1;
+  transform: none;
+}
+
+/* --- 크루 그리드 --- */
+.crew-grid {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 1rem;
+}
+.crew-card {
+  background: var(--card);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius);
+  padding: 1.2rem;
+  backdrop-filter: blur(6px);
+}
+.crew-card__role {
+  font-size: 0.72rem;
+  color: var(--duck);
+  font-weight: 700;
+}
+.crew-card__name {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 1.15rem;
+  margin: 0.2rem 0;
+}
+.crew-card__gate {
+  font-size: 0.78rem;
+  color: var(--ink-dim);
+}
+.crew-card__line {
+  font-size: 0.9rem;
+  margin: 0.6rem 0 0;
+}
+
+/* --- 진행률: 전체 게이지 --- */
+.progress-overall {
+  display: flex;
+  align-items: center;
+  gap: 1.6rem;
+  flex-wrap: wrap;
+  margin-bottom: 2.4rem;
+}
+.gauge {
+  position: relative;
+  width: 180px;
+  height: 180px;
+  flex: 0 0 auto;
+}
+.gauge__svg {
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+.gauge__track {
+  fill: none;
+  stroke: var(--card-border);
+  stroke-width: 10;
+}
+.gauge__fill {
+  fill: none;
+  stroke: var(--duck);
+  stroke-width: 10;
+  stroke-linecap: round;
+  stroke-dasharray: 327; /* 2πr, r=52 */
+  stroke-dashoffset: 327;
+  transition: stroke-dashoffset 1.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.gauge__label {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+.gauge__pct {
+  font-size: 2.2rem;
+  font-weight: 700;
+}
+.gauge__sub {
+  font-size: 0.8rem;
+  color: var(--ink-dim);
+}
+.progress-updated {
+  font-size: 0.75rem;
+  color: var(--ink-dim);
+}
+
+/* --- 파트별 보딩패스 행 --- */
+.parts {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 2.6rem;
+  display: grid;
+  gap: 0.7rem;
+}
+.part-row {
+  background: var(--card);
+  border: 1px solid var(--card-border);
+  border-radius: 10px;
+  padding: 0.85rem 1rem;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.5rem 1rem;
+  align-items: center;
+}
+.part-row__name {
+  font-weight: 600;
+}
+.part-row__code {
+  color: var(--duck);
+  font-size: 0.72rem;
+  margin-right: 0.5rem;
+}
+.part-row__frac {
+  font-size: 0.85rem;
+  color: var(--ink-dim);
+  text-align: right;
+}
+.part-row__bar {
+  grid-column: 1 / -1;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--card-border);
+  overflow: hidden;
+}
+.part-row__bar > span {
+  display: block;
+  height: 100%;
+  width: 0;
+  background: linear-gradient(90deg, var(--duck), var(--coral));
+  border-radius: inherit;
+  transition: width 1.2s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* --- 최근 머지 티켓 --- */
+.recent__title {
+  font-size: 0.85rem;
+  color: var(--ink-dim);
+  margin: 0 0 0.8rem;
+}
+.recent__list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 0.5rem;
+}
+.ticket {
+  display: flex;
+  align-items: baseline;
+  gap: 0.8rem;
+  background: var(--card);
+  border: 1px dashed var(--card-border);
+  border-radius: 8px;
+  padding: 0.6rem 0.9rem;
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+}
+.ticket__num {
+  color: var(--coral);
+  font-weight: 700;
+  flex: 0 0 auto;
+}
+.ticket__title {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ticket__date {
+  color: var(--ink-dim);
+  flex: 0 0 auto;
+  font-size: 0.75rem;
+}
+
+/* --- 노선도 (터미널/게이트) --- */
+.route-meta {
+  font-size: 0.78rem;
+  color: var(--ink-dim);
+  margin: -1rem 0 1.6rem;
+}
+.terminals {
+  display: grid;
+  gap: 1rem;
+}
+.terminal {
+  background: var(--card);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius);
+  padding: 1rem 1.2rem;
+}
+.terminal__head {
+  display: flex;
+  align-items: baseline;
+  gap: 0.7rem;
+}
+.terminal__code {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  color: var(--duck);
+  font-size: 0.8rem;
+}
+.terminal__name {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 1.2rem;
+}
+.terminal__desc {
+  color: var(--ink-dim);
+  font-size: 0.85rem;
+  margin: 0.2rem 0 0.9rem;
+}
+.gates {
+  display: grid;
+  gap: 0.4rem;
+}
+.gate {
+  border: 1px solid var(--card-border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.gate__btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  background: transparent;
+  border: 0;
+  color: inherit;
+  padding: 0.6rem 0.8rem;
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  text-align: left;
+}
+.gate__btn:hover {
+  background: color-mix(in srgb, var(--ink) 6%, transparent);
+}
+.method {
+  flex: 0 0 auto;
+  font-weight: 700;
+  font-size: 0.72rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: 5px;
+  color: #06122a;
+  min-width: 58px;
+  text-align: center;
+}
+.method--GET {
+  background: var(--m-get);
+}
+.method--POST {
+  background: var(--m-post);
+}
+.method--PATCH {
+  background: var(--m-patch);
+}
+.method--DELETE {
+  background: var(--m-delete);
+  color: #fff;
+}
+.gate__path {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.gate__auth {
+  flex: 0 0 auto;
+  font-size: 0.68rem;
+  color: var(--ink-dim);
+  border: 1px solid var(--card-border);
+  padding: 0.05rem 0.4rem;
+  border-radius: 4px;
+}
+.gate__chev {
+  flex: 0 0 auto;
+  transition: transform 0.2s ease;
+  color: var(--ink-dim);
+}
+.gate__btn[aria-expanded="true"] .gate__chev {
+  transform: rotate(90deg);
+}
+.gate__detail {
+  padding: 0 0.9rem;
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease, padding 0.3s ease;
+  font-size: 0.85rem;
+}
+.gate__detail.is-open {
+  padding: 0.4rem 0.9rem 0.9rem;
+  max-height: 240px;
+}
+.gate__detail dt {
+  color: var(--ink-dim);
+  font-size: 0.72rem;
+  font-family: var(--font-mono);
+  margin-top: 0.4rem;
+}
+
+/* --- 타임라인 --- */
+.timeline {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 2.6rem;
+  display: grid;
+  gap: 0.6rem;
+}
+.leg {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 1rem;
+  align-items: start;
+  background: var(--card);
+  border: 1px solid var(--card-border);
+  border-radius: 10px;
+  padding: 0.9rem 1.1rem;
+}
+.leg--done {
+  border-color: color-mix(in srgb, var(--duck) 40%, var(--card-border));
+}
+.leg--today {
+  outline: 2px solid var(--coral);
+}
+.leg__date {
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--duck);
+  white-space: nowrap;
+}
+.leg__label {
+  font-size: 0.95rem;
+}
+.leg__status {
+  font-size: 0.7rem;
+  font-family: var(--font-mono);
+  color: var(--ink-dim);
+  margin-left: 0.5rem;
+}
+.leg--today .leg__status {
+  color: var(--coral);
+}
+
+/* --- CTA --- */
+.cta {
+  display: flex;
+  gap: 0.8rem;
+  flex-wrap: wrap;
+}
+.cta__btn {
+  font-family: var(--font-mono);
+  text-decoration: none;
+  color: var(--ink);
+  border: 1px solid var(--card-border);
+  padding: 0.65rem 1.3rem;
+  border-radius: 999px;
+  font-size: 0.9rem;
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+.cta__btn:hover {
+  transform: translateY(-2px);
+}
+.cta__btn--primary {
+  background: var(--coral);
+  border-color: var(--coral);
+  color: #fff;
+}
+.cta__btn--swagger {
+  background: var(--duck);
+  border-color: var(--duck);
+  color: #06122a;
+}
+
+/* --- 포커스 가시성 --- */
+a:focus-visible,
+button:focus-visible {
+  outline: 3px solid var(--duck);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* --- 푸터 --- */
+.footer {
+  padding: 3rem 1.4rem;
+  text-align: center;
+  color: var(--ink-dim);
+  font-size: 0.78rem;
+}
+
+/* --- 반응형 --- */
+@media (max-width: 560px) {
+  .gauge {
+    width: 150px;
+    height: 150px;
+  }
+  .ticket__date {
+    display: none;
+  }
+}
+
+/* --- reduced-motion 존중 --- */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+  .reveal {
+    opacity: 1;
+    transform: none;
+  }
+}
