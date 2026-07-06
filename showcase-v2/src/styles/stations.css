@@ -224,6 +224,12 @@
 .station-panel--finale .deck-card__links {
   justify-content: center;
 }
+.station-panel__loop {
+  margin: 10px 0 0;
+  font-size: 11px;
+  letter-spacing: 0.4px;
+  opacity: 0.55;
+}
 
 /* no-webgl 폴백: 패널을 정적 문서 흐름으로 */
 .fallback-stack {
