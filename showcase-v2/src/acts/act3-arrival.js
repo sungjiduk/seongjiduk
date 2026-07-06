@@ -101,11 +101,11 @@ export function createAct3({ camera, duck, clouds, overlay, village, road, bicyc
 
     // 카메라: 뒤따라오는 팔로우 (도로 뒤 + 위)
     const back = road.at(Math.max(0, rideP - 0.045));
-    camPos.set(back.pos[0], back.pos[1] + 2.6, back.pos[2]);
+    camPos.set(back.pos[0], back.pos[1] + 3.4, back.pos[2]); // 마치야 지붕 높이 위로
     // 진행 방향 반대쪽으로 살짝 당겨 어깨 너머 구도
     camPos.x -= tangent[0] * 1.6;
     camPos.z -= tangent[2] * 1.6;
-    look.set(pos[0] + tangent[0] * 3, pos[1] + 1.0, pos[2] + tangent[2] * 3);
+    look.set(pos[0] + tangent[0] * 3, pos[1] + 1.15, pos[2] + tangent[2] * 3);
 
     // 피날레 CTA: 종점 접근 시 페이드 인
     if (panels.FINALE) {
