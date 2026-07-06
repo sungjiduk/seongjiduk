@@ -77,7 +77,8 @@ html.scene-ready #scene-canvas {
 
 /* --- 스크롤 트랙: 3막 안무의 스크럽 공간 --- */
 #scroll-space {
-  height: 600vh;
+  /* 여정 총 스크롤 거리 — 길수록 같은 휠 입력에 연출이 천천히 풀린다 */
+  height: 1300vh;
   pointer-events: none;
 }
 

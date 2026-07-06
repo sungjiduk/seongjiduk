@@ -327,7 +327,7 @@ async function boot() {
       trigger: "#scroll-space",
       start: "top top",
       end: "bottom bottom",
-      scrub: 0.6,
+      scrub: 1.4, // 관성 있는 따라잡기 — 휠을 놓아도 부드럽게 이어짐
       invalidateOnRefresh: true,
       onUpdate: (self) => updateFromScroll(self.progress),
     });
