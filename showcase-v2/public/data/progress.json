@@ -1,0 +1,113 @@
+{
+  "updatedAt": "2026-07-06T06:17:29.729Z",
+  "repos": [
+    "sungjiduk/seongjiduk-backend"
+  ],
+  "overall": {
+    "done": 11,
+    "total": 32,
+    "percent": 34,
+    "basis": "api-spec.json 전체 endpoint 대비 닫힌 이슈(파트별 cap)"
+  },
+  "parts": [
+    {
+      "code": "ADMIN",
+      "name": "관리자",
+      "done": 0,
+      "total": 11,
+      "percent": 0
+    },
+    {
+      "code": "TRIP",
+      "name": "여행 일정",
+      "done": 7,
+      "total": 7,
+      "percent": 100
+    },
+    {
+      "code": "CONTENT",
+      "name": "콘텐츠/성지",
+      "done": 0,
+      "total": 5,
+      "percent": 0
+    },
+    {
+      "code": "AUTH",
+      "name": "인증",
+      "done": 4,
+      "total": 4,
+      "percent": 100
+    },
+    {
+      "code": "VISIT",
+      "name": "방문 기록",
+      "done": 0,
+      "total": 3,
+      "percent": 0
+    },
+    {
+      "code": "BOOKING",
+      "name": "예약/링크",
+      "done": 0,
+      "total": 1,
+      "percent": 0
+    },
+    {
+      "code": "EVENT",
+      "name": "이벤트 수집",
+      "done": 0,
+      "total": 1,
+      "percent": 0
+    }
+  ],
+  "recentMerged": [
+    {
+      "number": 30,
+      "title": "[FEAT] AUTH-004 내 정보 조회 API 구현",
+      "mergedAt": "2026-07-06T03:22:07Z",
+      "repo": "sungjiduk/seongjiduk-backend"
+    },
+    {
+      "number": 28,
+      "title": "[DOCS] Anitabi 성지 임포트 설계 스펙",
+      "mergedAt": "2026-07-06T01:07:50Z",
+      "repo": "sungjiduk/seongjiduk-backend"
+    },
+    {
+      "number": 29,
+      "title": "[FEAT] 로그아웃 API 구현",
+      "mergedAt": "2026-07-05T16:44:34Z",
+      "repo": "sungjiduk/seongjiduk-backend"
+    },
+    {
+      "number": 25,
+      "title": "[FEAT] SpringSecurity설정, 회원가입 및 로그인 구현, Redis 설정",
+      "mergedAt": "2026-07-05T08:18:04Z",
+      "repo": "sungjiduk/seongjiduk-backend"
+    },
+    {
+      "number": 24,
+      "title": "[FEAT] 이벤트 수집 API (POST /api/events) 구현",
+      "mergedAt": "2026-07-03T13:29:09Z",
+      "repo": "sungjiduk/seongjiduk-backend"
+    },
+    {
+      "number": 23,
+      "title": "[FEAT] TRIP-002 일정 재생성 API 구현",
+      "mergedAt": "2026-07-03T09:07:05Z",
+      "repo": "sungjiduk/seongjiduk-backend"
+    },
+    {
+      "number": 22,
+      "title": "[FEAT] TRIP-007 일정 공유 API 구현",
+      "mergedAt": "2026-07-03T09:01:52Z",
+      "repo": "sungjiduk/seongjiduk-backend"
+    },
+    {
+      "number": 21,
+      "title": "[FEAT] TRIP-006 일정 삭제 API 구현",
+      "mergedAt": "2026-07-03T08:41:51Z",
+      "repo": "sungjiduk/seongjiduk-backend"
+    }
+  ]
+}

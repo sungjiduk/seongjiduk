@@ -1,0 +1,104 @@
+{
+  "items": [
+    {
+      "date": "2026-07-06",
+      "title": "진행률 80%로 부풀려진 집계 분모 정정",
+      "symptom": "쇼케이스 자동 진행률이 8/10=80%로 표시돼 실제 진척보다 크게 부풀려짐.",
+      "cause": "집계 분모가 prefix 달린 GitHub 이슈 수만 세서, 이슈로 안 만든 API가 분모에서 통째로 빠짐.",
+      "fix": "api-spec.json의 터미널별 엔드포인트 수(총 32개)를 분모로 바꾸고 닫힌 이슈는 파트별 cap 적용. 전체 11/32=34%로 정정.",
+      "lesson": "지표의 분모는 '한 일'이 아니라 '해야 할 전체'가 기준. 명세(SSOT)를 분모로 삼아야 자동 집계가 정직해진다.",
+      "refs": ["커밋 6950d5e"],
+      "part": "SHOWCASE"
+    },
+    {
+      "date": "2026-07-06",
+      "title": "쇼케이스 스크롤 진행도 0 고정 (ScrollTrigger 미갱신)",
+      "symptom": "쇼케이스 페이지에서 스크롤해도 히어로 애니메이션 진행도가 0에 고정돼 연출이 동작하지 않음.",
+      "cause": "비동기 data.js 렌더로 문서 높이가 나중에 늘어나는데, ScrollTrigger가 초기 높이 기준 계산을 갱신하지 않음.",
+      "fix": "window load 시점과 ResizeObserver로 본문 높이 변화를 감지해 ScrollTrigger.refresh()를 호출.",
+      "lesson": "스크롤 기반 애니메이션은 비동기 렌더로 레이아웃이 변하면 반드시 재계산이 필요하다. 높이 변화 감지를 기본 장착할 것.",
+      "refs": ["커밋 7b6844b"],
+      "part": "SHOWCASE"
+    },
+    {
+      "date": "2026-07-06",
+      "title": "Nominatim 공개 서버 403 → 역지오코딩 스위처블 설계",
+      "symptom": "Anitabi 성지 임포트 PoC에서 좌표→주소 역지오코딩에 쓰려던 Nominatim 공개 서버가 403으로 차단.",
+      "cause": "OSM Nominatim 공개 인스턴스는 이용 정책상 자동화 요청을 차단. 주소는 루트 계산엔 불필요하고 AI 설명 품질에만 플러스라는 점도 확인.",
+      "fix": "ReverseGeocoder 인터페이스로 전환: 기본 임플은 좌표+Anitabi city 폴백(키 불필요, 항상 동작), Google 임플은 GOOGLE_MAPS_API_KEY 있을 때만 활성.",
+      "lesson": "외부 무료 API는 정책·차단 리스크가 있다. 필수/옵션을 구분해 인터페이스 뒤로 숨기면 키 없이도 기능이 죽지 않는다.",
+      "refs": ["PR #28", "PR #32", "커밋 efcafa1"],
+      "part": "BACKEND"
+    },
+    {
+      "date": "2026-07-06",
+      "title": "dev 설정 ddl-auto: create-drop — 데이터 소실 위험 발견",
+      "symptom": "임포트한 성지 데이터가 앱 재시작마다 사라질 상황. dev application.yml이 ddl-auto: create-drop으로 바뀌어 있었음(PR #25에서 변경).",
+      "cause": "Hibernate가 재시작마다 스키마를 드롭/재생성해 데이터가 소실되고, Flyway 마이그레이션 이력과도 충돌 위험.",
+      "fix": "validate로 되돌리는 [FIX] 필요로 확정. A파트 엔티티용 Flyway 마이그레이션 작성 후 전환하기로 조율(진행 중).",
+      "lesson": "스키마 관리 주체는 하나여야 한다(Flyway). 팀원 PR 리뷰 때 설정 파일 diff도 데이터 안전 관점으로 봐야 한다.",
+      "refs": ["세션 로그 07-06", "PR #25"],
+      "part": "BACKEND"
+    },
+    {
+      "date": "2026-07-03",
+      "title": "스택 PR base 사고 — TRIP-005가 dev에 안 들어감",
+      "symptom": "PR #14가 머지됐는데 TRIP-005 detail 코드가 dev에 반영되지 않음.",
+      "cause": "스택 PR의 base가 dev가 아닌 부모 브랜치(feat/trip-save)인 채로 머지돼, 자식 변경분이 부모 브랜치에만 합쳐짐.",
+      "fix": "feat/trip-detail을 dev로 rebase해 PR #16으로 재적용·머지. 이후 '부모 머지 → 자식 base를 dev로 변경 → 머지' 절차를 규칙화.",
+      "lesson": "깊은 PR 스택은 지양하고 하나씩 머지. 머지 직전 base 브랜치 확인을 습관화할 것.",
+      "refs": ["PR #14", "PR #16", "세션 로그 07-03"],
+      "part": "INFRA"
+    },
+    {
+      "date": "2026-07-03",
+      "title": "Flyway 'Unsupported Database: MySQL'로 기동 실패",
+      "symptom": "MySQL(8.4/9.x 무관)로 앱 기동 시 'Unsupported Database: MySQL' 에러로 부팅 자체가 실패.",
+      "cause": "Flyway 10+부터 DB별 지원이 별도 모듈로 분리됐는데 flyway-core만 있고 flyway-mysql이 classpath에 없었음.",
+      "fix": "build.gradle에 org.flywaydb:flyway-mysql 추가(Boot 관리 버전 11.14.1, flyway-core와 일치). 마이그레이션 정상 적용 확인.",
+      "lesson": "메이저 버전업은 모듈 분리 같은 패키징 변경을 동반한다. 에러 문구로 릴리즈 노트를 먼저 확인할 것.",
+      "refs": ["PR #19", "커밋 41efa36"],
+      "part": "INFRA"
+    },
+    {
+      "date": "2026-07-03",
+      "title": "Swagger UI /swagger-ui.html 403",
+      "symptom": "localhost:8080/swagger-ui.html 접속 시 403으로 차단돼 API 문서를 볼 수 없음.",
+      "cause": "SecurityConfig permitAll이 /swagger-ui/** 패턴뿐이라 점(.)이 붙은 형제 경로 /swagger-ui.html은 매칭 안 됨 → anyRequest().authenticated()로 차단.",
+      "fix": "permitAll 목록에 /swagger-ui.html을 명시적으로 추가.",
+      "lesson": "와일드카드 패턴은 형제 경로를 못 덮는다. 정적 리소스 permit은 실제 요청 URL 기준으로 검증할 것.",
+      "refs": ["PR #18"],
+      "part": "BACKEND"
+    },
+    {
+      "date": "2026-07-03",
+      "title": "로컬 MySQL 버전·계정 제각각 → Compose 8.4 표준화",
+      "symptom": "팀원 로컬 실행 시 'Access denied' (계정/DB 없음), Homebrew MySQL 9.6은 Flyway 미지원 등 환경별 실패가 반복.",
+      "cause": "Homebrew MySQL은 전역 설치·버전 제각각·계정 수동 생성이라 로컬 환경이 통일되지 않음.",
+      "fix": "Docker Compose(up -d mysql)를 팀 표준으로: MySQL 8.4 고정 + seongjiduk 계정/DB 자동 생성 + 격리.",
+      "lesson": "'내 컴퓨터에선 되는데'는 환경 표준화 부재 신호. DB는 버전 고정된 컨테이너로 통일하는 게 가장 싸다.",
+      "refs": ["세션 로그 07-03"],
+      "part": "INFRA"
+    },
+    {
+      "date": "2026-07-02",
+      "title": "@DataJpaTest 미지원 → @SpringBootTest + H2(MODE=MySQL) 우회",
+      "symptom": "리포지토리 슬라이스 테스트용 @DataJpaTest가 test classpath에 없어 TDD를 시작할 수 없음.",
+      "cause": "테스트 의존성 구성상 JPA 슬라이스 테스트 어노테이션을 사용할 수 없는 상태.",
+      "fix": "@SpringBootTest + @Transactional(롤백)로 전환하고, 테스트 DB는 H2 인메모리 MODE=MySQL(+Flyway off, ddl-auto: create-drop)로 구성.",
+      "lesson": "슬라이스 테스트가 막히면 전체 컨텍스트+트랜잭션 롤백이 실용적 대안. H2 호환 모드로 운영 DB 방언 차이를 줄일 수 있다.",
+      "refs": ["세션 로그 07-02", "src/test/resources/application.yml"],
+      "part": "BACKEND"
+    },
+    {
+      "date": "2026-07-02",
+      "title": "컨트롤러 web-slice 테스트 불가 → 구현만 하고 테스트 보류",
+      "symptom": "컨트롤러 계층에 @WebMvcTest 기반 web-slice 테스트를 붙이려 했으나 test classpath에서 지원되지 않음.",
+      "cause": "슬라이스 테스트 의존성이 classpath에 없어 컨트롤러 단독 테스트 컨텍스트를 띄울 수 없음.",
+      "fix": "테스트 무게중심을 서비스 계층(BDD)으로 옮기고 컨트롤러는 얇게 구현만 유지, 컨트롤러 테스트는 보류. 이후 인증 컨트롤러부터 @SpringBootTest+MockMvc로 보강.",
+      "lesson": "테스트 불가 계층은 로직을 최소화해 리스크를 줄이고, 검증 가능한 계층에 테스트를 집중하는 것이 현실적 트레이드오프.",
+      "refs": ["세션 로그 07-02", "세션 로그 07-03"],
+      "part": "BACKEND"
+    }
+  ]
+}

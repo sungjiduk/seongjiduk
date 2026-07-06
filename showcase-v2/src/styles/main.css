@@ -1,0 +1,286 @@
+/* 성지덕 쇼케이스 v2 — 3막 인터랙티브 여정
+   v1 디자인 토큰 계승: 하늘/3D는 배경, 텍스트는 항상 불투명 패널 + 진네이비 잉크. */
+
+:root {
+  /* 하늘/고도 컬러 토큰 (v1 계승) */
+  --sky-dawn: #eaf3fb;
+  --sky-mid: #7fb2e6;
+  --altitude: #1b2a4a;
+  --space: #0b1026;
+
+  /* 서류(패널) & 잉크 — 콘텐츠 가독성의 기준 */
+  --paper: #ffffff;
+  --paper-soft: #f2f6fb;
+  --paper-border: #dce6f2;
+  --ink: #10203b;
+  --ink-dim: #5a6b85;
+
+  /* 포인트 */
+  --duck: #f5a80c;
+  --duck-soft: #ffc24b;
+  --coral: #e8395f;
+
+  /* 메서드 색상 (API 패널용, v1 계승) */
+  --m-get: #2f7fd4;
+  --m-post: #1f9e6d;
+  --m-patch: #d98b00;
+  --m-delete: #e8395f;
+
+  --font-display: "Space Grotesk", "Pretendard", system-ui, sans-serif;
+  --font-body: "Pretendard", "Inter", system-ui, sans-serif;
+  --font-mono: "Space Mono", ui-monospace, "SFMono-Regular", monospace;
+
+  --radius: 18px;
+  --shadow: 0 10px 34px rgba(11, 16, 38, 0.14), 0 2px 8px rgba(11, 16, 38, 0.08);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-body);
+  color: var(--ink);
+  background: var(--sky-mid); /* 캔버스 페인트 전 틈새 색 */
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+.mono {
+  font-family: var(--font-mono);
+  letter-spacing: 0.02em;
+}
+.display {
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.08;
+}
+
+/* --- 3D 스테이지: 뷰포트 고정 캔버스 --- */
+#stage {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+}
+#scene-canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+  opacity: 0;
+  transition: opacity 0.9s ease;
+}
+html.scene-ready #scene-canvas {
+  opacity: 1;
+}
+
+/* --- 스크롤 트랙: 3막 안무의 스크럽 공간 --- */
+#scroll-space {
+  height: 600vh;
+  pointer-events: none;
+}
+
+/* --- DOM 오버레이 루트 (3D 앵커 동기화 패널) --- */
+#overlay-root {
+  position: fixed;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none; /* 개별 패널이 auto로 되살린다 */
+}
+
+/* --- HUD --- */
+#hud {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 22px;
+  pointer-events: none;
+}
+.hud__brand {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  background: var(--paper);
+  border: 1px solid var(--paper-border);
+  border-radius: 999px;
+  padding: 8px 18px;
+  box-shadow: var(--shadow);
+}
+.hud__brand .display {
+  font-size: 1.05rem;
+  color: var(--ink);
+}
+.hud__sub {
+  font-size: 0.72rem;
+  color: var(--ink-dim);
+}
+#sound-toggle {
+  pointer-events: auto;
+  font-size: 0.72rem;
+  color: var(--ink-dim);
+  background: var(--paper);
+  border: 1px solid var(--paper-border);
+  border-radius: 999px;
+  padding: 10px 16px;
+  box-shadow: var(--shadow);
+  cursor: pointer;
+}
+#sound-toggle:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+#scroll-hint {
+  position: fixed;
+  bottom: 26px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 3;
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--ink);
+  background: var(--paper);
+  border: 1px solid var(--paper-border);
+  border-radius: 999px;
+  padding: 8px 16px;
+  box-shadow: var(--shadow);
+  animation: hint-bob 2.2s ease-in-out infinite;
+}
+@keyframes hint-bob {
+  0%,
+  100% {
+    transform: translateX(-50%) translateY(0);
+  }
+  50% {
+    transform: translateX(-50%) translateY(6px);
+  }
+}
+
+/* --- 로딩 스크린: 보딩패스 --- */
+#loading {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(180deg, var(--sky-dawn), var(--sky-mid));
+  transition: opacity 0.7s ease;
+}
+html.loading-done #loading {
+  opacity: 0;
+  pointer-events: none;
+}
+.boarding-pass {
+  width: min(88vw, 380px);
+  background: var(--paper);
+  border: 1px solid var(--paper-border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 22px 24px;
+}
+.boarding-pass__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  border-bottom: 2px dashed var(--paper-border);
+  padding-bottom: 12px;
+}
+.boarding-pass__brand {
+  font-size: 1.3rem;
+}
+.boarding-pass__flight {
+  font-size: 0.72rem;
+  color: var(--ink-dim);
+}
+.boarding-pass__route {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 14px;
+  font-size: 0.82rem;
+}
+.boarding-pass__arrow {
+  color: var(--duck);
+  font-weight: 700;
+}
+.boarding-pass__note {
+  margin: 10px 0 14px;
+  font-size: 0.82rem;
+  color: var(--ink-dim);
+}
+.boarding-pass__bar {
+  height: 8px;
+  border-radius: 999px;
+  background: var(--paper-soft);
+  border: 1px solid var(--paper-border);
+  overflow: hidden;
+}
+.boarding-pass__fill {
+  height: 100%;
+  width: 0%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--duck-soft), var(--duck));
+  transition: width 0.25s ease;
+}
+.boarding-pass__pct {
+  margin: 8px 0 0;
+  text-align: right;
+  font-size: 0.75rem;
+  color: var(--ink-dim);
+}
+
+/* --- 폴백(문서 모드): html.no-webgl일 때만 --- */
+#fallback {
+  display: none;
+  position: relative;
+  z-index: 4;
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 96px 20px 60px;
+}
+html.no-webgl #fallback {
+  display: block;
+}
+html.no-webgl #stage,
+html.no-webgl #scroll-hint,
+html.no-webgl #loading {
+  display: none;
+}
+html.no-webgl #scroll-space {
+  height: auto;
+}
+html.no-webgl body {
+  background: linear-gradient(180deg, var(--sky-dawn), var(--sky-mid));
+}
+.fallback-card {
+  background: var(--paper);
+  border: 1px solid var(--paper-border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 30px 32px;
+}
+.leg-tag {
+  font-size: 0.72rem;
+  color: var(--ink-dim);
+  letter-spacing: 0.14em;
+  margin: 0 0 8px;
+}
+
+/* --- 접근성: reduced-motion --- */
+@media (prefers-reduced-motion: reduce) {
+  #scroll-hint {
+    animation: none;
+  }
+  #scene-canvas,
+  #loading {
+    transition: none;
+  }
+}
