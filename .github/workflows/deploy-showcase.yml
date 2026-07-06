@@ -1,0 +1,39 @@
+# 쇼케이스 v2 — Vercel 배포 트리거
+#
+# 빌드/배포 자체는 Vercel Git 연동이 push마다 자동 수행한다.
+# 이 워크플로우는 "코드 변경 없이도" 진행률 스냅샷이 갱신되도록
+# 30분마다 Vercel Deploy Hook을 호출해 재빌드를 트리거한다.
+# (빌드 시 showcase-v2/scripts/refresh-progress.mjs 가 GitHub 이슈·PR을 재집계)
+#
+# 필요 시크릿:
+#   VERCEL_DEPLOY_HOOK_URL  Vercel 프로젝트 Settings → Git → Deploy Hooks에서 생성한 URL
+# Vercel 프로젝트 환경변수:
+#   SHOWCASE_TOKEN          (선택) private repo 이슈 집계용 PAT — 없으면 커밋된 스냅샷 사용
+
+name: Trigger showcase deploy
+
+on:
+  schedule:
+    - cron: "*/30 * * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: showcase-deploy-trigger
+  cancel-in-progress: true
+
+jobs:
+  trigger:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check secret
+        run: |
+          if [ -z "${{ secrets.VERCEL_DEPLOY_HOOK_URL }}" ]; then
+            echo "::error::VERCEL_DEPLOY_HOOK_URL 시크릿이 없습니다. Vercel → Settings → Git → Deploy Hooks에서 생성해 등록하세요."
+            exit 1
+          fi
+
+      - name: Call Vercel deploy hook
+        run: |
+          code=$(curl -s -o /dev/null -w "%{http_code}" -X POST "${{ secrets.VERCEL_DEPLOY_HOOK_URL }}")
+          echo "Deploy hook HTTP $code"
+          [ "$code" = "200" ] || [ "$code" = "201" ]

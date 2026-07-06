@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>성지덕 — 덕식이의 성지순례 스카이다이브</title>
+    <meta
+      name="description"
+      content="성지덕: 오덕후를 위한 성지순례 기반 AI 여행 플래너. 덕식이와 함께 구름을 뚫고 성지 마을로 — 팀·플랜·진행률·API·트러블슈팅을 하나의 3D 여정으로."
+    />
+
+    <!-- 폰트: 표시체(Space Grotesk), 본문(Pretendard), 모노(Space Mono) — v1 계승 -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Space+Mono:wght@400;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css"
+    />
+  </head>
+  <body>
+    <!-- 로딩 스크린: 보딩패스 스타일 (LoadingManager가 진행률 갱신, 완료 시 페이드) -->
+    <div id="loading" aria-live="polite">
+      <div class="boarding-pass">
+        <div class="boarding-pass__head">
+          <span class="boarding-pass__brand display">성지덕</span>
+          <span class="boarding-pass__flight mono">JUMP SJD-2026</span>
+        </div>
+        <div class="boarding-pass__route mono">
+          <span>SKY 10,000ft</span>
+          <span class="boarding-pass__arrow" aria-hidden="true">→</span>
+          <span>성지 마을</span>
+        </div>
+        <p class="boarding-pass__note">덕식이가 고글을 고쳐 쓰는 중…</p>
+        <div class="boarding-pass__bar" role="progressbar" aria-label="로딩 진행률">
+          <div class="boarding-pass__fill" data-loading-fill></div>
+        </div>
+        <p class="boarding-pass__pct mono" data-loading-pct>0%</p>
+      </div>
+    </div>
+
+    <!-- 3D 스테이지: 단일 캔버스, 스크롤과 무관하게 고정 -->
+    <div id="stage" aria-hidden="true">
+      <canvas id="scene-canvas"></canvas>
+    </div>
+
+    <!-- DOM 오버레이 루트: 3D 앵커에 동기화되는 카드/패널이 여기에 붙는다 (Task 4~6) -->
+    <div id="overlay-root" aria-live="polite"></div>
+
+    <!-- HUD: 최소 카피 + 스크롤 힌트 + 사운드 토글 자리 -->
+    <header id="hud">
+      <div class="hud__brand">
+        <span class="display">성지덕</span>
+        <span class="mono hud__sub">오덕후를 위한 성지순례 AI 플래너</span>
+      </div>
+      <!-- 사운드 토글 placeholder — Task 7에서 활성화 -->
+      <button
+        id="sound-toggle"
+        class="mono"
+        type="button"
+        disabled
+        aria-label="사운드 켜기/끄기 (준비 중)"
+        title="사운드 (준비 중)"
+      >
+        SOUND OFF
+      </button>
+    </header>
+    <p id="scroll-hint" class="mono" aria-hidden="true">스크롤하여 다이빙 ↓</p>
+
+    <!-- 스크롤 공간: 3막(스카이다이브 0–.30 / 클라우드 덱 .30–.55 / 마을 도착 .55–1)의 트랙 -->
+    <div id="scroll-space" aria-hidden="true"></div>
+
+    <!-- WebGL 불가/로드 실패 폴백: DOM 전용 문서 모드 (html.no-webgl일 때 표시) -->
+    <main id="fallback" hidden>
+      <section class="fallback-card">
+        <p class="leg-tag mono">SEONGJIDEOK · FALLBACK</p>
+        <h1 class="display">성지덕 — 오덕후를 위한 성지순례 AI 플래너</h1>
+        <p>
+          이 브라우저에서는 3D 여정을 재생할 수 없어 문서 모드로 안내합니다.
+          팀 소개 · 플랜 · 진행률 · API 명세 · 트러블슈팅 콘텐츠는 이곳에
+          그대로 표시됩니다.
+        </p>
+      </section>
+    </main>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

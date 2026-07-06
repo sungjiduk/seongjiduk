@@ -3,17 +3,26 @@
  * 성지덕 쇼케이스 — 자동 진행률 집계기.
  *
  * GitHub Actions에서 GITHUB_TOKEN(또는 PAT)으로 실행한다.
- * 대상 repo의 이슈·PR을 조회해 파트별/전체 진행률을 집계하고
- * showcase/data/progress.json 을 생성한다.
+ * 집계 기준:
+ *   - 분모는 showcase/data/api-spec.json 의 terminal별 endpoint 수(계획된 전체 API).
+ *     이슈로 만들지 않은 계획도 분모에 포함되어 진행률이 부풀지 않는다.
+ *   - 분자는 해당 prefix(예: "TRIP-003")로 닫힌 이슈 수. 분모(endpoint 수)를 초과하면 cap.
+ *   - API 명세에 없는 파트(INFRA 등)는 파트 목록에 이슈 기준 그대로 표시하되
+ *     전체 진행률 집계에서는 제외한다.
+ *   - endpoint가 있는데 이슈가 없는 파트도 0/N 으로 파트 목록에 포함한다.
+ * 결과를 showcase/data/progress.json 으로 생성하고,
  * 브라우저는 이 정적 JSON만 fetch 한다(토큰 노출 방지).
  *
  * 환경변수:
  *   GITHUB_TOKEN   필수. repo 읽기 권한.
  *   TARGET_REPOS   선택. 쉼표구분 "owner/repo". 기본 sungjiduk/seongjiduk-backend
  *   OUT_FILE       선택. 출력 경로. 기본 showcase/data/progress.json
+ *   API_SPEC_FILE  선택. API 명세 경로. 기본 showcase/data/api-spec.json
+ *
+ * OUT_FILE/API_SPEC_FILE 은 repo 루트에서 실행한다고 가정한 상대경로다.
  */
 
-import { writeFile, mkdir } from "node:fs/promises";
+import { readFile, writeFile, mkdir } from "node:fs/promises";
 import { dirname } from "node:path";
 
 const TOKEN = process.env.GITHUB_TOKEN || process.env.GH_TOKEN;
@@ -22,6 +31,8 @@ const REPOS = (process.env.TARGET_REPOS || "sungjiduk/seongjiduk-backend")
   .map((s) => s.trim())
   .filter(Boolean);
 const OUT_FILE = process.env.OUT_FILE || "showcase/data/progress.json";
+const API_SPEC_FILE =
+  process.env.API_SPEC_FILE || "showcase/data/api-spec.json";
 
 // 이슈/PR 제목 prefix → 파트 라벨. (예: "[FEAT] TRIP-003 ..." → TRIP)
 const PART_LABELS = {
@@ -97,7 +108,21 @@ function partOf(title) {
   return m ? m[1].toUpperCase() : null;
 }
 
+/** api-spec.json 에서 terminal(code)별 endpoint 수를 읽는다. */
+async function loadPlannedEndpoints() {
+  const spec = JSON.parse(await readFile(API_SPEC_FILE, "utf8"));
+  const planned = new Map(); // code → { name, total }
+  for (const t of spec.terminals || []) {
+    planned.set(t.code, {
+      name: t.domain || PART_LABELS[t.code] || t.code,
+      total: (t.endpoints || []).length,
+    });
+  }
+  return planned;
+}
+
 async function main() {
+  const planned = await loadPlannedEndpoints();
   const allIssues = [];
   const allMerged = [];
 
@@ -114,39 +139,50 @@ async function main() {
     }
   }
 
-  // 파트별 집계 (prefix 있는 이슈만).
-  const parts = new Map();
-  let taggedTotal = 0;
-  let taggedDone = 0;
+  // prefix별 이슈 수 집계.
+  const issueStats = new Map(); // code → { done, total } (이슈 기준)
   for (const it of allIssues) {
     const code = partOf(it.title);
     if (!code) continue;
-    taggedTotal += 1;
-    const done = it.state === "closed";
-    if (done) taggedDone += 1;
-    if (!parts.has(code)) parts.set(code, { done: 0, total: 0 });
-    const p = parts.get(code);
-    p.total += 1;
-    if (done) p.done += 1;
+    if (!issueStats.has(code)) issueStats.set(code, { done: 0, total: 0 });
+    const s = issueStats.get(code);
+    s.total += 1;
+    if (it.state === "closed") s.done += 1;
   }
 
-  const partsArr = [...parts.entries()]
-    .map(([code, v]) => ({
+  // 파트별 집계.
+  // - API 명세에 있는 파트: 분모 = endpoint 수, 분자 = 닫힌 이슈 수(분모로 cap).
+  //   이슈가 하나도 없어도 0/N 으로 포함한다.
+  // - 명세에 없는 파트(INFRA 등): 이슈 기준 그대로 표시(전체 집계에서는 제외).
+  const partsArr = [];
+  let overallDone = 0;
+  let overallTotal = 0;
+  for (const [code, { name, total }] of planned) {
+    const closed = issueStats.get(code)?.done ?? 0;
+    const done = Math.min(closed, total);
+    overallDone += done;
+    overallTotal += total;
+    partsArr.push({
+      code,
+      name: PART_LABELS[code] || name,
+      done,
+      total,
+      percent: total ? Math.round((done / total) * 100) : 0,
+    });
+  }
+  for (const [code, s] of issueStats) {
+    if (planned.has(code)) continue;
+    partsArr.push({
       code,
       name: PART_LABELS[code] || code,
-      done: v.done,
-      total: v.total,
-      percent: v.total ? Math.round((v.done / v.total) * 100) : 0,
-    }))
-    .sort((a, b) => b.total - a.total || a.code.localeCompare(b.code));
-
-  // 전체: prefix 태그된 이슈 기준. 태그가 없으면 전체 이슈 기준으로 폴백.
-  let overallDone = taggedDone;
-  let overallTotal = taggedTotal;
-  if (overallTotal === 0) {
-    overallTotal = allIssues.length;
-    overallDone = allIssues.filter((i) => i.state === "closed").length;
+      done: s.done,
+      total: s.total,
+      percent: s.total ? Math.round((s.done / s.total) * 100) : 0,
+    });
   }
+  partsArr.sort((a, b) => b.total - a.total || a.code.localeCompare(b.code));
+
+  // 전체: 분모 = API 명세의 전 endpoint 수, 분자 = API 파트들의 cap된 done 합.
   const overallPercent = overallTotal
     ? Math.round((overallDone / overallTotal) * 100)
     : 0;
@@ -162,6 +198,7 @@ async function main() {
       done: overallDone,
       total: overallTotal,
       percent: overallPercent,
+      basis: "api-spec.json 전체 endpoint 대비 닫힌 이슈(파트별 cap)",
     },
     parts: partsArr,
     recentMerged,
