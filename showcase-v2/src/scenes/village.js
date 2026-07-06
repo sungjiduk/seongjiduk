@@ -1,21 +1,27 @@
 // 성지 마을 — 프로시저럴 로우폴리 석양 마을(외부 에셋 없음).
-// 도로 리본(커브 좌우 오프셋 스트립) + 지면 + 인스턴스드 건물/창문/나무 + 토리이 + 정거장 표지판.
-// 아키하바라풍 디테일: 간판(캔버스 텍스처)·옥상 구조물·차양·가로등·전신주+전선·자판기·성지 핀.
-// 조명은 main.js(키/림/헤미)가 관리 — 여기서는 창문/간판/가로등 자체 발광만 쓴다.
+// 도로 리본(커브 좌우 오프셋 스트립) + 지면 + 인스턴스드 마치야/창호/나무 + 토리이 + 정거장 표지판.
+// 교토 골목풍 디테일: 목조 마치야(투톤+박공 기와지붕)·신사·노렌·초칭/홍등 스트링·석등·전신주+전선·간판(캔버스 텍스처).
+// 조명은 main.js(키/림/헤미)가 관리 — 여기서는 창호지/간판/랜턴 자체 발광(emissive)만 쓴다.
 // ACT3가 켤 때까지 group.visible = false.
 
 import * as THREE from "three";
 import { createRoad } from "../core/path.js";
 
-/** 석양 팔레트 — 노면/지면/건물(sebastien-lempens 마을 무드) */
+/** 석양 팔레트 — 노면/지면 + 교토 목조(다크우드/회벽/차콜기와/버밀리언/랜턴 레드) */
 const PALETTE = {
   road: "#d98a74",
   roadDash: "#f6e3cf",
   groundA: "#e8b89a",
   groundB: "#d9a184",
-  buildings: ["#e2957f", "#c96f5c", "#e8b89a", "#f2d0b3", "#b95e4e"],
-  windowLit: "#ffd08a",
-  windowDark: "#5a3a33",
+  woodA: "#5a4636",
+  woodB: "#6b5442",
+  plaster: "#f0e8d8",
+  roofTile: "#3a3d45",
+  roofTileB: "#2f323a",
+  frameWood: "#2e241d",
+  shoji: "#ffe9c4",
+  noren: "#2b3a5c",
+  shrineRed: "#c73e2e",
   trunk: "#8a5a48",
   leafGreenA: "#7fa15f",
   leafGreenB: "#5c7f4e",
@@ -27,7 +33,6 @@ const PALETTE = {
   lampGlow: "#ffd9a0",
   wire: "#3a2c28",
   duckYellow: "#f5a80c",
-  awnings: ["#c33f2e", "#f6e3cf", "#2e4a66"],
   vending: ["#c62f2f", "#2e5f9e", "#f6e3cf"],
   // 여행지 무드(원경·참배로) 팔레트
   fuji: "#7d8fb3",
@@ -39,7 +44,7 @@ const PALETTE = {
   infoText: "#6b4a3a",
 };
 
-/** 간판 텍스트 — 아키하바라풍 세로 간판(캔버스 텍스처, 자체 발광) */
+/** 간판 텍스트 — 세로 간판(캔버스 텍스처, 자체 발광) + 목조 프레임 */
 const SIGN_DEFS = [
   { text: "성지덕", bg: "#b3402e", fg: "#ffe9c9" },
   { text: "카페", bg: "#284a63", fg: "#ffd08a" },
@@ -128,6 +133,32 @@ function makeRoadSampler(road, n = 220) {
 }
 
 /**
+ * 단위 박공지붕 프리즘(폭1·높이1·깊이1, 용마루는 x축 방향 = 정면과 평행).
+ * 인스턴스 스케일 (벽폭+처마, 지붕높이, 벽깊이+처마)로 마치야/신사 지붕에 공용.
+ * 논-인덱스드 + computeVertexNormals → 플랫 셰이딩 경사면.
+ */
+function makeGableGeometry() {
+  const tris = [
+    // +z 경사면
+    [-0.5, 0, 0.5], [0.5, 0, 0.5], [0.5, 1, 0],
+    [-0.5, 0, 0.5], [0.5, 1, 0], [-0.5, 1, 0],
+    // -z 경사면
+    [0.5, 0, -0.5], [-0.5, 0, -0.5], [-0.5, 1, 0],
+    [0.5, 0, -0.5], [-0.5, 1, 0], [0.5, 1, 0],
+    // 박공면(x+ / x-)
+    [0.5, 0, 0.5], [0.5, 0, -0.5], [0.5, 1, 0],
+    [-0.5, 0, -0.5], [-0.5, 0, 0.5], [-0.5, 1, 0],
+    // 바닥(처마 밑면, 아래 방향)
+    [-0.5, 0, -0.5], [0.5, 0, -0.5], [0.5, 0, 0.5],
+    [-0.5, 0, -0.5], [0.5, 0, 0.5], [-0.5, 0, 0.5],
+  ];
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute("position", new THREE.BufferAttribute(new Float32Array(tris.flat()), 3));
+  geo.computeVertexNormals();
+  return geo;
+}
+
+/**
  * 세로 간판 캔버스 텍스처 — 글자를 위→아래로 쌓는다.
  * document가 없으면(node 스모크) null → 호출부가 단색 플레이스홀더 처리.
  */
@@ -189,6 +220,39 @@ function makeInfoTexture(text) {
   }
 }
 
+/** 격자 창호지(쇼지) 텍스처 — 따뜻한 발광 창 + 어두운 격자. document 없으면 null. */
+function makeShojiTexture() {
+  if (typeof document === "undefined") return null;
+  try {
+    const c = document.createElement("canvas");
+    c.width = 48;
+    c.height = 64;
+    const ctx = c.getContext("2d");
+    if (!ctx) return null;
+    ctx.fillStyle = PALETTE.shoji;
+    ctx.fillRect(0, 0, 48, 64);
+    ctx.strokeStyle = "#4a382a";
+    ctx.lineWidth = 3;
+    ctx.strokeRect(1.5, 1.5, 45, 61);
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    for (const x of [16, 32]) {
+      ctx.moveTo(x, 2);
+      ctx.lineTo(x, 62);
+    }
+    for (const y of [16, 32, 48]) {
+      ctx.moveTo(2, y);
+      ctx.lineTo(46, y);
+    }
+    ctx.stroke();
+    const tex = new THREE.CanvasTexture(c);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    return tex;
+  } catch {
+    return null;
+  }
+}
+
 /** 벚꽃잎 스프라이트 텍스처 — 부드러운 원형 그라디언트. document 없으면 null. */
 function makePetalTexture() {
   if (typeof document === "undefined") return null;
@@ -236,7 +300,9 @@ export function buildVillage(scene) {
   const V = new THREE.Vector3();
   const S = new THREE.Vector3();
   const UP = new THREE.Vector3(0, 1, 0);
-  const E = new THREE.Euler();
+
+  // 공용 지오메트리 — 마치야/신사 박공지붕
+  const gableGeo = makeGableGeometry();
 
   // ── 지면: 로우폴리 요철 평면(석양 그라디언트 버텍스 컬러) ──
   const groundGeo = new THREE.PlaneGeometry(160, 160, 48, 48);
@@ -290,171 +356,215 @@ export function buildVillage(scene) {
   dashes.name = "road-dashes";
   group.add(dashes);
 
-  // ── 건물: 인스턴스드 박스(도로에서 4~10유닛, 침범 금지) + 자체 발광 창문 ──
-  // 높이·폭 변주 확대(1.4~5.8 / 1.5~4.1) — 아키하바라풍 들쭉날쭉 스카이라인
-  const BUILDING_COUNT = 42;
-  const buildings = new THREE.InstancedMesh(
+  // ── 신사 자리 선점: 도로변 명당(정거장 회피) — 마치야/나무가 이 반경을 비켜 배치 ──
+  const SHRINE_DEFS = [
+    { p: 0.25, side: -1, dist: 6.2, w: 3.4, d: 2.8, ph: 2.1, wide: false },
+    { p: 0.5, side: 1, dist: 6.4, w: 3.2, d: 2.6, ph: 2.0, wide: false },
+    { p: 0.76, side: 1, dist: 6.8, w: 6.2, d: 3.2, ph: 2.3, wide: true }, // 배전(신사 입구 안내판 뒤)
+  ];
+  const shrineSpots = []; // { x, z, r, def }
+  for (const def of SHRINE_DEFS) {
+    const { pos: rp, tangent } = road.at(def.p);
+    const [nx, , nz] = sideNormal(tangent);
+    let dist = def.dist;
+    let x = rp[0] + nx * def.side * dist;
+    let z = rp[2] + nz * def.side * dist;
+    // 처마(+1.7/2)까지 노면 밖으로 — 침범 시 한 번 더 바깥으로
+    if (distToRoad(x, z) < HALF_W + Math.max(def.w, def.d) / 2 + 1.3) {
+      dist += 1.8;
+      x = rp[0] + nx * def.side * dist;
+      z = rp[2] + nz * def.side * dist;
+      if (distToRoad(x, z) < HALF_W + Math.max(def.w, def.d) / 2 + 1.3) continue;
+    }
+    const yaw = Math.atan2(rp[0] - x, rp[2] - z); // 도로를 향해 정면
+    shrineSpots.push({ x, z, yaw, r: Math.max(def.w, def.d) / 2 + 1.4, def });
+  }
+  const nearShrine = (x, z, halfSize) =>
+    shrineSpots.some((sp) => Math.hypot(sp.x - x, sp.z - z) < sp.r + halfSize);
+
+  // ── 마치야(町家): 다크우드+회벽 투톤 몸체 + 박공 기와지붕(처마 0.4 돌출) + 용마루 ──
+  const BUILDING_COUNT = 34;
+  const lowerWalls = new THREE.InstancedMesh(
+    new THREE.BoxGeometry(1, 1, 1),
+    new THREE.MeshStandardMaterial({ roughness: 0.92, flatShading: true }),
+    BUILDING_COUNT
+  );
+  const upperWalls = new THREE.InstancedMesh(
     new THREE.BoxGeometry(1, 1, 1),
     new THREE.MeshStandardMaterial({ roughness: 0.9, flatShading: true }),
     BUILDING_COUNT
   );
+  const roofs = new THREE.InstancedMesh(
+    gableGeo,
+    new THREE.MeshStandardMaterial({ roughness: 0.85, flatShading: true }),
+    BUILDING_COUNT
+  );
+  const ridges = new THREE.InstancedMesh(
+    new THREE.BoxGeometry(1, 0.09, 0.24),
+    new THREE.MeshStandardMaterial({ color: PALETTE.roofTileB, roughness: 0.85, flatShading: true }),
+    BUILDING_COUNT
+  );
   const windowSpecs = []; // { pos, yaw, lit }
-  const buildingSpecs = []; // { x, z, yaw, w, d, h, fx, fz } — 부속물(간판/차양/옥상) 배치용
+  const buildingSpecs = []; // { x, z, yaw, w, d, h, fx, fz } — 부속물(간판/노렌/초칭) 배치용
   {
     const color = new THREE.Color();
+    const woodA = new THREE.Color(PALETTE.woodA);
+    const woodB = new THREE.Color(PALETTE.woodB);
+    const plaster = new THREE.Color(PALETTE.plaster);
+    const tileA = new THREE.Color(PALETTE.roofTile);
+    const tileB = new THREE.Color(PALETTE.roofTileB);
     let placed = 0;
     let guard = 0;
-    while (placed < BUILDING_COUNT && guard++ < 800) {
+    while (placed < BUILDING_COUNT && guard++ < 900) {
       const p = 0.03 + rand() * 0.88; // 토리이(p≈0.95) 앞까지만
+      // 정거장 카드 도킹 시야 확보
+      if (STATIONS.some((s) => Math.abs(s.p - p) < 0.04)) continue;
       const { pos: rp, tangent } = road.at(p);
       const [nx, , nz] = sideNormal(tangent);
       const side = rand() < 0.5 ? 1 : -1;
-      const dist = 4 + rand() * 6; // 도로에서 4~10유닛 이격
-      const w = 1.5 + rand() * 2.6;
-      const d = 1.5 + rand() * 2.2;
-      const h = 1.4 + rand() * 4.4;
+      const dist = 3.8 + rand() * 5.0; // 도로에서 3.8~8.8유닛 — 골목 스케일
+      const w = 1.8 + rand() * 1.6;
+      const d = 1.6 + rand() * 1.0;
+      const twoStory = rand() < 0.55;
+      const h = twoStory ? 2.4 + rand() * 0.8 : 1.6 + rand() * 0.6; // 1~2층(1.6~3.2)
       const x = rp[0] + nx * side * dist;
       const z = rp[2] + nz * side * dist;
-      // S자 반대편 노면 침범 검사(건물 반폭 + 노면 반폭 + 여유)
-      if (distToRoad(x, z) < HALF_W + Math.max(w, d) * 0.5 + 0.6) continue;
+      // S자 반대편 노면 침범 검사(건물 반폭 + 처마 0.4 + 노면 반폭 + 여유)
+      if (distToRoad(x, z) < HALF_W + Math.max(w, d) * 0.5 + 1.0) continue;
+      if (nearShrine(x, z, Math.max(w, d) * 0.5 + 0.4)) continue;
       const yaw = Math.atan2(rp[0] - x, rp[2] - z); // 도로를 향해 정면
       Q.setFromAxisAngle(UP, yaw);
-      M.compose(V.set(x, h / 2, z), Q, S.set(w, h, d));
-      buildings.setMatrixAt(placed, M);
-      color.set(PALETTE.buildings[Math.floor(rand() * PALETTE.buildings.length)]);
-      buildings.setColorAt(placed, color);
+      // 1층부(다크우드)
+      M.compose(V.set(x, h * 0.25, z), Q, S.set(w, h * 0.5, d));
+      lowerWalls.setMatrixAt(placed, M);
+      lowerWalls.setColorAt(placed, color.copy(rand() < 0.5 ? woodA : woodB));
+      // 상부(백색 회벽 위주, 일부는 통목조)
+      M.compose(V.set(x, h * 0.75, z), Q, S.set(w, h * 0.5, d));
+      upperWalls.setMatrixAt(placed, M);
+      upperWalls.setColorAt(placed, color.copy(rand() < 0.78 ? plaster : woodB));
+      // 박공지붕: 처마가 벽보다 0.4 돌출, 용마루는 정면과 평행
+      const rh = 0.55 + h * 0.14;
+      M.compose(V.set(x, h, z), Q, S.set(w + 0.8, rh, d + 0.8));
+      roofs.setMatrixAt(placed, M);
+      roofs.setColorAt(placed, color.copy(tileA).lerp(tileB, rand() * 0.7));
+      M.compose(V.set(x, h + rh, z), Q, S.set(w + 0.9, 1, 1));
+      ridges.setMatrixAt(placed, M);
 
       const fx = Math.sin(yaw); // 정면(도로 쪽) 방향
       const fz = Math.cos(yaw);
       buildingSpecs.push({ x, z, yaw, w, d, h, fx, fz });
 
-      // 창문: 도로 쪽 정면에 그리드 배치
-      const cols = Math.min(3, Math.max(1, Math.floor(w / 0.9)));
-      const rows = Math.min(4, Math.max(1, Math.floor(h / 1.1)));
-      for (let r = 0; r < rows; r++) {
+      // 격자 창호(쇼지): 1층 + (2층이면) 처마 밑 상층 창
+      const cols = Math.min(3, Math.max(1, Math.floor(w / 1.0)));
+      const rowYs = h >= 2.3 ? [0.95, h - 0.62] : [0.95];
+      for (const ly of rowYs) {
+        if (ly > h - 0.45) continue;
         for (let cIdx = 0; cIdx < cols; cIdx++) {
-          const lx = (cIdx - (cols - 1) / 2) * 0.8;
-          const ly = h * 0.28 + r * 1.0;
-          if (ly > h - 0.5) continue;
+          const lx = (cIdx - (cols - 1) / 2) * 0.85;
           windowSpecs.push({
-            pos: [
-              x + fx * (d / 2 + 0.03) + fz * lx,
-              ly,
-              z + fz * (d / 2 + 0.03) - fx * lx,
-            ],
+            pos: [x + fx * (d / 2 + 0.05) + fz * lx, ly, z + fz * (d / 2 + 0.05) - fx * lx],
             yaw,
-            lit: rand() < 0.7,
+            lit: rand() < 0.78,
           });
         }
       }
       placed++;
     }
-    buildings.count = placed;
-    buildings.instanceMatrix.needsUpdate = true;
-    if (buildings.instanceColor) buildings.instanceColor.needsUpdate = true;
+    for (const im of [lowerWalls, upperWalls, roofs, ridges]) {
+      im.count = placed;
+      im.instanceMatrix.needsUpdate = true;
+      if (im.instanceColor) im.instanceColor.needsUpdate = true;
+    }
   }
-  buildings.name = "buildings";
-  group.add(buildings);
+  lowerWalls.name = "machiya-lower";
+  upperWalls.name = "machiya-upper";
+  roofs.name = "machiya-roofs";
+  ridges.name = "machiya-ridges";
+  group.add(lowerWalls, upperWalls, roofs, ridges);
 
   /** 건물 로컬(lx: 정면 가로, lz: 정면 바깥) → 월드 xz (창문 배치와 동일 규약) */
   const bLocal = (b, lx, lz) => [b.x + b.fz * lx + b.fx * lz, b.z - b.fx * lx + b.fz * lz];
 
-  // 창문: MeshBasicMaterial = 조명 무관 자체 발광(석양 창불), 어두운 창은 인스턴스 컬러
-  const windows = new THREE.InstancedMesh(
-    new THREE.BoxGeometry(0.3, 0.38, 0.06),
-    new THREE.MeshBasicMaterial(),
-    Math.max(1, windowSpecs.length)
-  );
+  // ── 창호: 어두운 목재 프레임 + 격자 창호지(자체 발광, 조명 무관) ──
   {
-    const lit = new THREE.Color(PALETTE.windowLit);
-    const dark = new THREE.Color(PALETTE.windowDark);
+    const frames = new THREE.InstancedMesh(
+      new THREE.BoxGeometry(0.46, 0.54, 0.06),
+      new THREE.MeshStandardMaterial({ color: PALETTE.frameWood, roughness: 0.95, flatShading: true }),
+      Math.max(1, windowSpecs.length)
+    );
+    const shojiTex = makeShojiTexture();
+    const panes = new THREE.InstancedMesh(
+      new THREE.BoxGeometry(0.36, 0.44, 0.05),
+      shojiTex
+        ? new THREE.MeshBasicMaterial({ map: shojiTex })
+        : new THREE.MeshBasicMaterial({ color: PALETTE.shoji }), // node 스모크 플레이스홀더
+      Math.max(1, windowSpecs.length)
+    );
+    const lit = new THREE.Color("#ffffff"); // 텍스처 원색(따뜻한 창호지)
+    const dark = new THREE.Color("#6b5a4a"); // 불 꺼진 창(텍스처 곱셈 틴트)
     windowSpecs.forEach((wSpec, i) => {
       Q.setFromAxisAngle(UP, wSpec.yaw);
       M.compose(V.set(...wSpec.pos), Q, S.set(1, 1, 1));
-      windows.setMatrixAt(i, M);
-      windows.setColorAt(i, wSpec.lit ? lit : dark);
+      frames.setMatrixAt(i, M);
+      const fx = Math.sin(wSpec.yaw);
+      const fz = Math.cos(wSpec.yaw);
+      M.compose(
+        V.set(wSpec.pos[0] + fx * 0.025, wSpec.pos[1], wSpec.pos[2] + fz * 0.025),
+        Q,
+        S.set(1, 1, 1)
+      );
+      panes.setMatrixAt(i, M);
+      panes.setColorAt(i, wSpec.lit ? lit : dark);
     });
-    windows.count = windowSpecs.length;
-    windows.instanceMatrix.needsUpdate = true;
-    if (windows.instanceColor) windows.instanceColor.needsUpdate = true;
+    frames.count = panes.count = windowSpecs.length;
+    frames.instanceMatrix.needsUpdate = true;
+    panes.instanceMatrix.needsUpdate = true;
+    if (panes.instanceColor) panes.instanceColor.needsUpdate = true;
+    frames.name = "window-frames";
+    panes.name = "window-shoji";
+    group.add(frames, panes);
   }
-  windows.name = "windows";
-  group.add(windows);
 
-  // ── 옥상 구조물: 물탱크/실외기 느낌의 작은 박스(인스턴스드) ──
+  // ── 노렌: 입구 처마 밑 짧은 인디고 천(얇은 박스) ──
   {
-    const roofSpecs = [];
+    const norenSpecs = [];
     for (const b of buildingSpecs) {
-      if (rand() > 0.5) continue;
-      const n = rand() < 0.3 ? 2 : 1;
-      for (let k = 0; k < n && roofSpecs.length < 40; k++) {
-        const sw = 0.3 + rand() * 0.55;
-        const sh = 0.3 + rand() * 0.65;
-        const sd = 0.3 + rand() * 0.5;
-        const lx = (rand() - 0.5) * Math.max(0, b.w - sw - 0.3);
-        const lz = (rand() - 0.5) * Math.max(0, b.d - sd - 0.3);
-        const [x, z] = bLocal(b, lx, lz);
-        roofSpecs.push({ x, z, y: b.h + sh / 2, yaw: b.yaw, sw, sh, sd });
-      }
+      if (b.h < 2.0 || rand() > 0.42) continue;
+      const nw = Math.min(1.15, b.w * 0.42);
+      const lx = (rand() < 0.5 ? -1 : 1) * b.w * 0.16;
+      const [x, z] = bLocal(b, lx, b.d / 2 + 0.08);
+      norenSpecs.push({ x, z, yaw: b.yaw, w: nw });
     }
-    if (roofSpecs.length) {
-      const roofUnits = new THREE.InstancedMesh(
-        new THREE.BoxGeometry(1, 1, 1),
-        new THREE.MeshStandardMaterial({ roughness: 0.95, flatShading: true }),
-        roofSpecs.length
+    if (norenSpecs.length) {
+      const noren = new THREE.InstancedMesh(
+        new THREE.BoxGeometry(1, 0.45, 0.04),
+        new THREE.MeshStandardMaterial({ color: PALETTE.noren, roughness: 0.95, flatShading: true }),
+        norenSpecs.length
       );
-      const cA = new THREE.Color("#a9765f");
-      const cB = new THREE.Color("#e8d3bd");
-      const c = new THREE.Color();
-      roofSpecs.forEach((r, i) => {
-        Q.setFromAxisAngle(UP, r.yaw);
-        M.compose(V.set(r.x, r.y, r.z), Q, S.set(r.sw, r.sh, r.sd));
-        roofUnits.setMatrixAt(i, M);
-        roofUnits.setColorAt(i, c.copy(cA).lerp(cB, rand()));
+      norenSpecs.forEach((n, i) => {
+        Q.setFromAxisAngle(UP, n.yaw);
+        M.compose(V.set(n.x, 1.42, n.z), Q, S.set(n.w, 1, 1));
+        noren.setMatrixAt(i, M);
       });
-      roofUnits.name = "roof-units";
-      group.add(roofUnits);
+      noren.name = "noren";
+      group.add(noren);
     }
   }
 
-  // ── 차양: 정면 1층 위 얇은 박스(살짝 아래로 기울임) ──
-  {
-    const awningSpecs = [];
-    for (const b of buildingSpecs) {
-      if (b.h < 1.8 || rand() > 0.4) continue;
-      const y = 0.95 + rand() * 0.25;
-      const [x, z] = bLocal(b, 0, b.d / 2 + 0.24);
-      awningSpecs.push({ x, z, y, yaw: b.yaw, w: b.w * 0.72, ci: Math.floor(rand() * PALETTE.awnings.length) });
-    }
-    if (awningSpecs.length) {
-      const awnings = new THREE.InstancedMesh(
-        new THREE.BoxGeometry(1, 0.06, 0.5),
-        new THREE.MeshStandardMaterial({ roughness: 0.85, flatShading: true }),
-        awningSpecs.length
-      );
-      const c = new THREE.Color();
-      awningSpecs.forEach((a, i) => {
-        Q.setFromEuler(E.set(0.28, a.yaw, 0, "YXZ")); // 바깥쪽으로 살짝 처짐
-        M.compose(V.set(a.x, a.y, a.z), Q, S.set(a.w, 1, 1));
-        awnings.setMatrixAt(i, M);
-        awnings.setColorAt(i, c.set(PALETTE.awnings[a.ci]));
-      });
-      awnings.name = "awnings";
-      group.add(awnings);
-    }
-  }
-
-  // ── 간판: 세로 간판(캔버스 텍스처, 자체 발광) — 텍스처별 인스턴스드 ──
+  // ── 간판: 세로 간판(캔버스 텍스처 유지) + 목조 프레임 백킹 ──
   {
     const buckets = SIGN_DEFS.map(() => []);
+    const frameSpecs = [];
     for (const b of buildingSpecs) {
       if (b.h < 2.0 || rand() > 0.45) continue;
       const defIdx = Math.floor(rand() * SIGN_DEFS.length);
       const lx = (rand() < 0.5 ? -1 : 1) * Math.max(0.1, b.w / 2 - 0.42);
       const y = Math.min(b.h - 0.85, 1.3 + rand() * 1.1);
       if (y < 0.9) continue;
-      const [x, z] = bLocal(b, lx, b.d / 2 + 0.1);
-      buckets[defIdx].push({ x, z, y, yaw: b.yaw, s: 0.85 + rand() * 0.3 });
+      const [x, z] = bLocal(b, lx, b.d / 2 + 0.12);
+      const spec = { x, z, y, yaw: b.yaw, s: 0.85 + rand() * 0.3 };
+      buckets[defIdx].push(spec);
+      frameSpecs.push(spec);
     }
     SIGN_DEFS.forEach((def, di) => {
       const specs = buckets[di];
@@ -472,6 +582,85 @@ export function buildVillage(scene) {
       signs.name = `sign-boards-${di}`;
       group.add(signs);
     });
+    if (frameSpecs.length) {
+      const signFrames = new THREE.InstancedMesh(
+        new THREE.BoxGeometry(0.68, 1.5, 0.07),
+        new THREE.MeshStandardMaterial({ color: PALETTE.frameWood, roughness: 0.95, flatShading: true }),
+        frameSpecs.length
+      );
+      frameSpecs.forEach((sp, i) => {
+        const fx = Math.sin(sp.yaw);
+        const fz = Math.cos(sp.yaw);
+        Q.setFromAxisAngle(UP, sp.yaw);
+        M.compose(V.set(sp.x - fx * 0.05, sp.y, sp.z - fz * 0.05), Q, S.set(sp.s, sp.s, 1));
+        signFrames.setMatrixAt(i, M);
+      });
+      signFrames.name = "sign-frames";
+      group.add(signFrames);
+    }
+  }
+
+  // ── 신사: 버밀리언 기둥 + 백색 벽 + 크게 뻗은 박공지붕(배전 1채 포함) ──
+  {
+    const redMat = new THREE.MeshStandardMaterial({
+      color: PALETTE.shrineRed,
+      roughness: 0.75,
+      flatShading: true,
+    });
+    const whiteMat = new THREE.MeshStandardMaterial({
+      color: PALETTE.plaster,
+      roughness: 0.9,
+      flatShading: true,
+    });
+    const roofMat = new THREE.MeshStandardMaterial({
+      color: PALETTE.roofTileB,
+      roughness: 0.85,
+      flatShading: true,
+    });
+    const stoneMat = new THREE.MeshStandardMaterial({
+      color: PALETTE.stone,
+      roughness: 1,
+      flatShading: true,
+    });
+    for (const spot of shrineSpots) {
+      const { w, d, ph, wide } = spot.def;
+      const roofH = wide ? 1.35 : 1.05;
+      const g = new THREE.Group();
+      g.name = wide ? "shrine-haiden" : "shrine";
+      // 기단(돌 플랫폼)
+      const platform = new THREE.Mesh(new THREE.BoxGeometry(w + 0.8, 0.35, d + 0.8), stoneMat);
+      platform.position.y = 0.175;
+      g.add(platform);
+      // 버밀리언 기둥: 네 모서리 + (배전은) 정면 중간 2주
+      const pillarGeo = new THREE.CylinderGeometry(0.11, 0.13, ph, 7);
+      const pillarXs = wide ? [-w / 2 + 0.18, -w / 6, w / 6, w / 2 - 0.18] : [-w / 2 + 0.18, w / 2 - 0.18];
+      for (const px of pillarXs) {
+        for (const pz of [-d / 2 + 0.18, d / 2 - 0.18]) {
+          const pillar = new THREE.Mesh(pillarGeo, redMat);
+          pillar.position.set(px, 0.35 + ph / 2, pz);
+          g.add(pillar);
+        }
+      }
+      // 백색 벽(기둥 안쪽으로 인셋)
+      const wall = new THREE.Mesh(new THREE.BoxGeometry(w - 0.7, ph * 0.82, d - 0.7), whiteMat);
+      wall.position.y = 0.35 + ph * 0.41;
+      g.add(wall);
+      // 처마 밑 버밀리언 도리(가로보)
+      const beam = new THREE.Mesh(new THREE.BoxGeometry(w + 0.5, 0.22, 0.3), redMat);
+      beam.position.set(0, 0.35 + ph - 0.11, d / 2 - 0.05);
+      g.add(beam);
+      // 크게 뻗은 박공지붕(처마 0.85 돌출) + 용마루
+      const roof = new THREE.Mesh(gableGeo, roofMat);
+      roof.position.y = 0.35 + ph;
+      roof.scale.set(w + 1.7, roofH, d + 1.5);
+      g.add(roof);
+      const ridge = new THREE.Mesh(new THREE.BoxGeometry(w + 1.9, 0.13, 0.28), roofMat);
+      ridge.position.y = 0.35 + ph + roofH;
+      g.add(ridge);
+      g.position.set(spot.x, 0, spot.z);
+      g.rotation.y = spot.yaw;
+      group.add(g);
+    }
   }
 
   // ── 가로수: 콘 2~3단 겹침 + 색 변주(녹색 2종 + 벚꽃 핑크) ──
@@ -515,8 +704,9 @@ export function buildVillage(scene) {
       const x = rp[0] + nx * side * dist;
       const z = rp[2] + nz * side * dist;
       const s = 0.8 + rand() * 0.7;
-      // 수관(최대 콘 반경 0.8*s)까지 노면 밖으로 — 침범 금지
+      // 수관(최대 콘 반경 0.8*s)까지 노면 밖으로 — 침범 금지, 신사 기단도 회피
       if (distToRoad(x, z) < HALF_W + 0.8 * s + 0.15) continue;
+      if (nearShrine(x, z, 0.8 * s)) continue;
       Q.identity();
       M.compose(V.set(x, 0.45 * s, z), Q, S.set(s, s, s));
       trunks.setMatrixAt(placed, M);
@@ -709,6 +899,7 @@ export function buildVillage(scene) {
       const x = rp[0] + nx * side * dist;
       const z = rp[2] + nz * side * dist;
       if (distToRoad(x, z) < HALF_W + 0.35) continue;
+      if (nearShrine(x, z, 0.4)) continue;
       const yaw = Math.atan2(rp[0] - x, rp[2] - z); // 도로를 향해
       vendSpecs.push({ x, z, yaw, ci: Math.floor(rand() * PALETTE.vending.length) });
     }
@@ -904,11 +1095,11 @@ export function buildVillage(scene) {
     });
   }
 
-  // ── 홍등 스트링: 도로를 가로지르는 축제 랜턴(전선 새그 + 빨간 홍등 emissive) ──
+  // ── 홍등 스트링: 도로를 가로지르는 축제 랜턴 8스팬+ (전선 새그 + 홍등 emissive) ──
   {
     const spans = []; // { a: V3, b: V3 }
     const postSpecs = [];
-    for (const p of [0.22, 0.52, 0.91]) {
+    for (const p of [0.06, 0.12, 0.2, 0.28, 0.36, 0.46, 0.56, 0.7, 0.78, 0.91]) {
       const { pos: rp, tangent } = road.at(p);
       const [nx, , nz] = sideNormal(tangent);
       const ends = [];
@@ -959,8 +1150,8 @@ export function buildVillage(scene) {
           if (sIdx > 0) wirePts.push(prev.x, prev.y, prev.z, cur.x, cur.y, cur.z);
           prev.copy(cur);
         }
-        // 홍등 3개/스팬: 전선 아래로 살짝 매달림
-        for (const t of [0.27, 0.5, 0.73]) {
+        // 홍등 4개/스팬: 전선 아래로 살짝 매달림
+        for (const t of [0.2, 0.4, 0.6, 0.8]) {
           bezier(span, t, cur);
           lanternSpecs.push({ x: cur.x, y: cur.y - 0.24, z: cur.z });
         }
@@ -992,6 +1183,71 @@ export function buildVillage(scene) {
       });
       lanterns.name = "red-lanterns";
       group.add(lanterns);
+      group.userData.stringLanternCount = lanternSpecs.length;
+    }
+  }
+
+  // ── 초칭(提灯): 처마 밑 홍등(건물당 1~2개) + 토리이 참배로 양옆 연등 기둥 ──
+  {
+    const chochinSpecs = []; // { x, z, y }
+    for (const b of buildingSpecs) {
+      const two = rand() < 0.5;
+      const sides = two ? [-1, 1] : [rand() < 0.5 ? -1 : 1];
+      for (const sgn of sides) {
+        const lx = sgn * Math.max(0.2, b.w / 2 - 0.32);
+        const [x, z] = bLocal(b, lx, b.d / 2 + 0.3);
+        chochinSpecs.push({ x, z, y: b.h - 0.32 });
+      }
+    }
+    // 참배로 연등 기둥 8기: 석등(dist 2.0)과 p 인터리브, 살짝 바깥 열(dist 2.35)
+    const approachPostSpecs = [];
+    for (let i = 0; i < 8; i++) {
+      const p = 0.8785 + (i >> 1) * 0.0205;
+      const { pos: rp, tangent } = road.at(p);
+      const [nx, , nz] = sideNormal(tangent);
+      const side = i % 2 === 0 ? 1 : -1;
+      const x = rp[0] + nx * side * 2.35;
+      const z = rp[2] + nz * side * 2.35;
+      if (distToRoad(x, z) < HALF_W + 0.3) continue;
+      approachPostSpecs.push({ x, z });
+      chochinSpecs.push({ x, z, y: 2.08 });
+    }
+    if (approachPostSpecs.length) {
+      const posts = new THREE.InstancedMesh(
+        new THREE.CylinderGeometry(0.045, 0.06, 1.9, 6),
+        new THREE.MeshStandardMaterial({ color: PALETTE.frameWood, roughness: 0.95, flatShading: true }),
+        approachPostSpecs.length
+      );
+      Q.identity();
+      S.set(1, 1, 1);
+      approachPostSpecs.forEach((pt, i) => {
+        M.compose(V.set(pt.x, 0.95, pt.z), Q, S);
+        posts.setMatrixAt(i, M);
+      });
+      posts.name = "approach-lantern-posts";
+      group.add(posts);
+    }
+    if (chochinSpecs.length) {
+      const chochin = new THREE.InstancedMesh(
+        new THREE.SphereGeometry(0.16, 10, 8),
+        new THREE.MeshStandardMaterial({
+          color: PALETTE.lanternRed,
+          emissive: PALETTE.lanternGlow,
+          emissiveIntensity: 0.5,
+          roughness: 0.6,
+          flatShading: true,
+        }),
+        chochinSpecs.length
+      );
+      Q.identity();
+      S.set(1, 1.35, 1); // 타원 초칭 실루엣
+      chochinSpecs.forEach((l, i) => {
+        M.compose(V.set(l.x, l.y, l.z), Q, S);
+        chochin.setMatrixAt(i, M);
+      });
+      chochin.name = "chochin";
+      group.add(chochin);
+      group.userData.chochinCount = chochinSpecs.length;
     }
   }
 
