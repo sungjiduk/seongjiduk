@@ -11,9 +11,8 @@
     }
   },
   "crew": [
-    { "name": "크루 1", "role": "Backend", "gate": "AUTH · TRIP", "line": "인증과 여행 일정 API를 조종합니다." },
-    { "name": "크루 2", "role": "Backend", "gate": "CONTENT · ADMIN", "line": "콘텐츠와 관리자 통계 게이트를 담당합니다." },
-    { "name": "크루 3", "role": "AI", "gate": "AI Agent", "line": "LangGraph로 성지 루트를 생성합니다." },
-    { "name": "크루 4", "role": "Frontend", "gate": "Web UI", "line": "지도와 일정 화면을 만듭니다." }
+    { "name": "박선", "role": "Backend", "gate": "AUTH · CONTENT · SPOT", "line": "JWT·Redis 인증 게이트에서 탑승객을 확인하고, 유저·콘텐츠·성지 노선을 운항합니다." },
+    { "name": "최준환", "role": "Backend", "gate": "TRIP · EVENT", "line": "여행 일정(Trip) 항로를 설계하고, 기내 이벤트 로그를 블랙박스에 수집합니다." },
+    { "name": "현재성", "role": "Backend", "gate": "ADMIN · STATS", "line": "관제탑에서 관리자 통계 계기판을 읽으며 전체 운항 현황을 모니터링합니다." }
   ]
 }
