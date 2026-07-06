@@ -1,13 +1,13 @@
 {
-  "updatedAt": "2026-07-06T06:17:29.729Z",
+  "updatedAt": "2026-07-06T21:22:28.651Z",
   "repos": [
     "sungjiduk/seongjiduk-backend"
   ],
   "overall": {
-    "done": 11,
+    "done": 12,
     "total": 32,
-    "percent": 34,
-    "basis": "api-spec.json 전체 endpoint 대비 닫힌 이슈(파트별 cap)"
+    "percent": 38,
+    "basis": "api-spec.json 전체 endpoint 대비 완료(닫힌 이슈 ∪ 머지 PR, 파트별 cap)"
   },
   "parts": [
     {
@@ -55,58 +55,58 @@
     {
       "code": "EVENT",
       "name": "이벤트 수집",
-      "done": 0,
+      "done": 1,
       "total": 1,
-      "percent": 0
+      "percent": 100
     }
   ],
   "recentMerged": [
     {
-      "number": 30,
-      "title": "[FEAT] AUTH-004 내 정보 조회 API 구현",
-      "mergedAt": "2026-07-06T03:22:07Z",
+      "number": 41,
+      "title": "[FEAT] 임포트 직후 AI 설명 백그라운드 프리웜",
+      "mergedAt": "2026-07-06T18:47:55Z",
       "repo": "sungjiduk/seongjiduk-backend"
     },
     {
-      "number": 28,
-      "title": "[DOCS] Anitabi 성지 임포트 설계 스펙",
-      "mergedAt": "2026-07-06T01:07:50Z",
+      "number": 40,
+      "title": "[INFRA] 배포 파이프라인 — prod compose 보강 + GHCR 발행 워크플로우",
+      "mergedAt": "2026-07-06T18:47:34Z",
       "repo": "sungjiduk/seongjiduk-backend"
     },
     {
-      "number": 29,
-      "title": "[FEAT] 로그아웃 API 구현",
-      "mergedAt": "2026-07-05T16:44:34Z",
+      "number": 39,
+      "title": "[FEAT] AI 설명 동시 호출 single-flight 가드",
+      "mergedAt": "2026-07-06T18:47:21Z",
       "repo": "sungjiduk/seongjiduk-backend"
     },
     {
-      "number": 25,
-      "title": "[FEAT] SpringSecurity설정, 회원가입 및 로그인 구현, Redis 설정",
-      "mergedAt": "2026-07-05T08:18:04Z",
+      "number": 38,
+      "title": "[FEAT] 성지 목록에 애니 장면 스크린샷 URL 노출",
+      "mergedAt": "2026-07-06T18:47:07Z",
       "repo": "sungjiduk/seongjiduk-backend"
     },
     {
-      "number": 24,
-      "title": "[FEAT] 이벤트 수집 API (POST /api/events) 구현",
-      "mergedAt": "2026-07-03T13:29:09Z",
+      "number": 35,
+      "title": "[FEAT] 성지 목록에 AI 장면 설명 병합 (/ai/spots/describe 소비)",
+      "mergedAt": "2026-07-06T18:46:54Z",
       "repo": "sungjiduk/seongjiduk-backend"
     },
     {
-      "number": 23,
-      "title": "[FEAT] TRIP-002 일정 재생성 API 구현",
-      "mergedAt": "2026-07-03T09:07:05Z",
+      "number": 34,
+      "title": "[FEAT] 일정 생성 ai-service(LangGraph) 연동 + 로컬 폴백",
+      "mergedAt": "2026-07-06T18:46:40Z",
       "repo": "sungjiduk/seongjiduk-backend"
     },
     {
-      "number": 22,
-      "title": "[FEAT] TRIP-007 일정 공유 API 구현",
-      "mergedAt": "2026-07-03T09:01:52Z",
+      "number": 33,
+      "title": "[FEAT] Content/Spot 조회 서비스 실구현 (mock 제거)",
+      "mergedAt": "2026-07-06T18:46:25Z",
       "repo": "sungjiduk/seongjiduk-backend"
     },
     {
-      "number": 21,
-      "title": "[FEAT] TRIP-006 일정 삭제 API 구현",
-      "mergedAt": "2026-07-03T08:41:51Z",
+      "number": 32,
+      "title": "[FEAT] Anitabi 성지 데이터 임포트 (관리자)",
+      "mergedAt": "2026-07-06T18:46:11Z",
       "repo": "sungjiduk/seongjiduk-backend"
     }
   ]
