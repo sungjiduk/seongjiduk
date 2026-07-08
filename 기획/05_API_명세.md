@@ -208,3 +208,14 @@ Response:
   "topSpot": "쇼헤이바시"
 }
 ```
+## 결제 API
+
+| Method | Path | 설명 | 인증 | 기능ID |
+|--------|------|------|------|--------|
+| GET | `/trips/{tripId}/offers` | 결제 상품 조회 | USER | F-6 |
+| POST | `/payment-orders` | 결제 주문 생성 | USER | F-6 |
+| POST | `/payments/confirm` | Toss 결제 승인 | USER | F-6 |
+
+
+
+
