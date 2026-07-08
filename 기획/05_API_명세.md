@@ -51,11 +51,21 @@ Response:
 
 | Method | Path | 설명 | 인증 | 기능ID |
 |--------|------|------|------|--------|
-| GET | `/contents` | 작품 목록 조회 | X | F-3 |
+| GET | `/contents` | 작품 목록 조회 (spotCount·thumbnailUrl 포함) | X | F-3 |
 | GET | `/contents/{contentId}` | 작품 상세 조회 | X | F-3 |
-| GET | `/contents/{contentId}/spots` | 작품별 성지 스팟 조회 | X | F-3 |
+| GET | `/contents/{contentId}/spots` | 작품별 성지 스팟 조회 (AI 설명 병합) | X | F-3 |
+| GET | `/contents/{contentId}/route-verification` | 블로그 후기 기반 검증 코스·언급 랭킹 | X | F-3 |
+| GET | `/contents/{contentId}/missions` | 성지별 미션 목록 (시네마틱 여정) | X | F-3 |
+| POST | `/missions/{missionId}/complete` | 미션 완료 처리 | USER | F-3 |
 | GET | `/spots/{spotId}` | 성지 상세 조회 | X | F-3 |
+| GET | `/spots/{spotId}/nearby-attractions` | 주변 관광지 (리뷰수 순 상위 6) | X | F-3 |
+| GET | `/spots/{spotId}/nearby-restaurants` | 주변 맛집 (별점 순 상위 6) | X | F-3 |
+| GET | `/spots/{spotId}/nearby?theme=` | 테마별 주변(SIGHTS·FOOD·CAFE·SHOPPING·LODGING) | X | F-3 |
+| GET | `/spots/{spotId}/street-view` | 성지 Street View 이미지(프록시, 없으면 404) | X | F-3 |
 | POST | `/spot-reports` | 성지 제보 | USER | F-5 |
+
+> 외부 API 연동(Google Places/Street View)은 키 없거나 파노라마 없으면 빈 결과/404 — 프론트는 섹션을 숨긴다.
+> `route-verification`은 네이버 검색+GPT 추출 파이프라인이라 첫 조회가 수십 초(작품별 캐시). 상세: `기획/06_AI_에이전트_설계.md`.
 
 ### GET `/contents/{contentId}/spots`
 
@@ -68,14 +78,42 @@ Response:
   "spots": [
     {
       "id": 1,
-      "name": "쇼헤이바시",
+      "name": "神田明神",
+      "koreanName": "칸다묘진",
       "city": "Tokyo",
       "address": "Tokyo, Japan",
       "lat": 35.0,
       "lng": 139.0,
       "recommendedDurationMin": 30,
-      "referenceUrl": "https://example.com/reference"
+      "referenceUrl": "https://example.com/reference",
+      "sceneDescription": "μ's 멤버들이 자주 찾는 신사로, 학교와도 가까운 위치에 있다.",
+      "specialPoint": "신사에서 소원을 비는 장면이 인상적이며, 실제로도 많은 팬들이 방문한다.",
+      "sceneImageUrl": "https://image.anitabi.cn/...",
+      "tips": ["오전 방문이 한산", "에마(소원패)를 남기는 팬이 많다"]
     }
+  ]
+}
+```
+
+> `koreanName·sceneDescription·specialPoint·sceneImageUrl·tips`는 **AI describe 결과 병합**(ai-service 미가용 시 null/원어). 05 설계 기준선에는 없던 확장 필드 — Swagger 런타임이 최신 계약이다.
+
+### GET `/contents/{contentId}/route-verification`
+
+Response (available=false는 네이버 키 미설정):
+
+```json
+{
+  "contentId": 1,
+  "available": true,
+  "postCount": 12,
+  "usedPostCount": 4,
+  "spotMentions": [
+    { "spotId": 5, "count": 3, "sources": [ { "title": "성지순례 후기", "link": "https://blog...", "postdate": "20260627" } ] }
+  ],
+  "verifiedPairs": [ { "fromSpotId": 5, "toSpotId": 6, "count": 3 } ],
+  "courses": [
+    { "rank": 1, "spotIds": [5, 6, 22], "supportCount": 3,
+      "sources": [ { "title": "칸다묘진→UDX→타케무라", "link": "https://blog...", "postdate": "20260627" } ] }
   ]
 }
 ```
@@ -140,8 +178,10 @@ Response:
 | Method | Path | 설명 | 인증 | 기능ID |
 |--------|------|------|------|--------|
 | POST | `/visits` | 방문 인증/메모 등록 | USER | F-3 |
-| GET | `/visits/me` | 내 방문 기록 조회 | USER | F-3 |
-| DELETE | `/visits/{visitId}` | 방문 기록 삭제 | USER | F-3 |
+| GET | `/visits/me` | 내 방문 기록 조회 (성지 여권 — contentId·contentTitle 포함) | USER | F-3 |
+| DELETE | `/visits/{visitId}` | 방문 기록 삭제 (소유자만) | USER | F-3 |
+
+> `VisitResponse`에 `contentId·contentTitle` 포함 — 마이페이지가 작품별 컬렉션(성지 여권)으로 묶는다. 삭제는 소유자 검사(FORBIDDEN).
 
 ## 예약/외부 링크 API
 
@@ -191,6 +231,10 @@ Response: `204 No Content`
 | POST | `/admin/spots` | 성지 등록 | ADMIN | F-5 |
 | PATCH | `/admin/spots/{spotId}` | 성지 수정 | ADMIN | F-5 |
 | DELETE | `/admin/spots/{spotId}` | 성지 삭제 | ADMIN | F-5 |
+| POST | `/admin/contents/{contentId}/spots/import` | Anitabi bangumiId로 성지 일괄 임포트 | ADMIN | F-5 |
+| POST | `/admin/spots/{spotId}/missions` | 성지 미션 등록 | ADMIN | F-5 |
+| PATCH | `/admin/missions/{missionId}` | 미션 수정 | ADMIN | F-5 |
+| DELETE | `/admin/missions/{missionId}` | 미션 삭제 | ADMIN | F-5 |
 | GET | `/admin/spot-reports` | 성지 제보 목록 | ADMIN | F-5 |
 | PATCH | `/admin/spot-reports/{reportId}` | 성지 제보 처리 | ADMIN | F-5 |
 
