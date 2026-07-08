@@ -161,6 +161,13 @@ async function main() {
   // 태그 없이 머지된 핵심 엔드포인트 보정
   // (예: 이벤트 수집 API는 EVENT-001 태그 없이 "이벤트 수집 API"로 머지됨)
   const KEYWORD_DONE = { EVENT: /\/api\/events|이벤트\s*수집/i };
+
+  // 실검증 보정: 우리 PR 제목이 [FEAT] 한국어라 PART-### 코드로 안 잡히는 '실구현 완료'를
+  // dev 코드 기준(2026-07-09 수동 검증)으로 보정한다. 각 파트가 최신 상태로 조정 가능.
+  //   CONTENT 5/5(목록·상세·성지목록·성지상세·제보접수), VISIT 3/3(등록·내기록·삭제 가드),
+  //   BOOKING 1/1(MVP 외부링크=스펙상 완료), ADMIN 8/11(통계3·작품CRUD3·성지 등록/수정;
+  //   성지 delete=mock·제보 영속화=스텁 제외). AUTH/TRIP/EVENT는 이슈/키워드로 이미 정확.
+  const MANUAL_DONE = { CONTENT: 5, VISIT: 3, BOOKING: 1, ADMIN: 8 };
   for (const [code, re] of Object.entries(KEYWORD_DONE)) {
     if (allMerged.some((pr) => re.test(pr.title))) {
       if (!doneTokens.has(code)) doneTokens.set(code, new Set());
@@ -176,7 +183,7 @@ async function main() {
   let overallDone = 0;
   let overallTotal = 0;
   for (const [code, { name, total }] of planned) {
-    const done = Math.min(doneTokens.get(code)?.size ?? 0, total);
+    const done = Math.min(Math.max(doneTokens.get(code)?.size ?? 0, MANUAL_DONE[code] ?? 0), total);
     overallDone += done;
     overallTotal += total;
     partsArr.push({
