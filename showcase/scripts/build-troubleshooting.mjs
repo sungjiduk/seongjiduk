@@ -65,14 +65,31 @@ const PART_MAP = {
   FRONTEND: "FRONTEND",
 };
 
+/** 트러블슈팅 이슈로 인정: `troubleshooting` 라벨 OR 제목이 `[TS]` 로 시작.
+ *  (라벨이 repo에 없으면 폼이 라벨을 못 붙이므로, 폼이 강제하는 제목 접두어로도 잡는다) */
+function isTsIssue(it) {
+  const labeled = (it.labels || []).some(
+    (l) => (typeof l === "string" ? l : l?.name) === "troubleshooting"
+  );
+  return labeled || /^\[TS\]/i.test(it.title || "");
+}
+
 async function issuesToItems() {
   if (!TOKEN) return [];
   const items = [];
-  const list = await gh(
-    `/repos/${REPO}/issues?state=all&labels=troubleshooting&per_page=100`
-  );
+  // 라벨 필터에 의존하지 않고 전체 이슈를 페이지네이션으로 훑어 [TS]/라벨로 선별한다.
+  const list = [];
+  for (let page = 1; page <= 10; page++) {
+    const batch = await gh(
+      `/repos/${REPO}/issues?state=all&per_page=100&page=${page}`
+    );
+    if (!batch.length) break;
+    list.push(...batch);
+    if (batch.length < 100) break;
+  }
   for (const it of list) {
     if (it.pull_request) continue;
+    if (!isTsIssue(it)) continue;
     const f = parseIssueForm(it.body);
     const title = f["제목"] || it.title.replace(/^\[TS\]\s*/i, "").trim();
     if (!title) continue;
