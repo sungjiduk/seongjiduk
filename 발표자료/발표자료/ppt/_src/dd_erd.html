@@ -1,0 +1,53 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8">
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{width:1600px;height:900px;font-family:"Apple SD Gothic Neo","Pretendard",system-ui,sans-serif;
+    background:#fff;color:#1f2430;padding:50px 60px 44px;display:flex;flex-direction:column}
+  .kicker{color:#f43f5e;font-weight:800;letter-spacing:.12em;font-size:16px}
+  h1{font-size:36px;font-weight:800;margin:5px 0 0}
+  .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;align-items:stretch;flex:1}
+  .grp{border-radius:16px;padding:20px 18px;display:flex;flex-direction:column}
+  .g1{background:#eef2ff} .g2{background:#fdeef0} .g3{background:#eafaef} .g4{background:#fff4e5}
+  .grp h2{font-size:17px;font-weight:800;margin-bottom:12px}
+  .g1 h2{color:#3a49b8}.g2 h2{color:#b02a3d}.g3 h2{color:#1a7f3c}.g4 h2{color:#a15c00}
+  .ent{background:#fff;border:1px solid #e7e9f0;border-radius:10px;padding:9px 12px;margin:8px 0;font-size:15px}
+  .ent b{font-weight:800;font-size:15.5px} .ent .d{display:block;color:#8a8f98;font-size:12.5px;margin-top:1px}
+  .rel{text-align:center;color:#b7bcc4;font-size:12px;margin:-4px 0}
+  .cards{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:20px}
+  .note{background:#faf7f5;border:1px solid #ece6e2;border-radius:14px;padding:16px 20px;font-size:15.5px;line-height:1.5}
+  .note b{color:#f43f5e}
+  .foot{position:absolute;bottom:24px;left:60px;color:#9aa0aa;font-size:14px}
+</style></head><body>
+  <div class="kicker">DOMAIN MODEL · ERD</div>
+  <h1>도메인 모델 — 14 엔티티 · 4 도메인</h1>
+  <div class="grid">
+    <div class="grp g1"><h2>사용자</h2>
+      <div class="ent"><b>User</b><span class="d">회원(email·role)</span></div>
+      <div class="ent"><b>UserPreference</b><span class="d">여행 스타일·예산</span></div>
+      <div class="ent"><b>UserFavoriteContent</b><span class="d">찜 (M:N 중간)</span></div>
+    </div>
+    <div class="grp g2"><h2>콘텐츠 · 성지</h2>
+      <div class="ent"><b>Content</b><span class="d">작품</span></div><div class="rel">1:N ▼</div>
+      <div class="ent"><b>PilgrimageSpot</b><span class="d">성지 스팟(좌표)</span></div>
+      <div class="ent"><b>SpotReference</b><span class="d">레퍼런스 링크</span></div>
+      <div class="ent"><b>NearbyAttraction</b><span class="d">주변 관광지</span></div>
+      <div class="ent"><b>SpotReport</b><span class="d">성지 제보</span></div>
+    </div>
+    <div class="grp g3"><h2>여행 일정</h2>
+      <div class="ent"><b>TripPlan</b><span class="d">일정(status)</span></div><div class="rel">1:N ▼</div>
+      <div class="ent"><b>TripDay</b><span class="d">일자별</span></div><div class="rel">1:N ▼</div>
+      <div class="ent"><b>TripStop</b><span class="d">방문 장소(순서·체류)</span></div>
+      <div class="ent"><b>BookingLink</b><span class="d">항공·숙소 링크</span></div>
+    </div>
+    <div class="grp g4"><h2>기록 · 로그</h2>
+      <div class="ent"><b>VisitRecord</b><span class="d">방문 인증·메모</span></div>
+      <div class="ent"><b>AiRequestLog</b><span class="d">AI 호출 로그</span></div>
+      <div class="ent"><b>UsageEvent</b><span class="d">이용 이벤트(통계)</span></div>
+    </div>
+  </div>
+  <div class="cards">
+    <div class="note">🔗 <b>폴리모픽 FK 회피</b> — TripStop은 성지 or 주변관광지. 컬럼 하나로 두 테이블을 가리키면 FK 불가 → <b>pilgrimage_spot_id · nearby_attraction_id 분리</b> + spot_type으로 구분, 참조 무결성 유지.</div>
+    <div class="note">🗂 <b>M:N 정규화 · Flyway 버전관리</b> — User↔Content 찜을 중간 테이블로 해소. 스키마는 <b>Flyway V1~V12</b>, 운영은 <b>ddl-auto=validate</b>(엔티티=스키마 일치 시만 부팅).</div>
+  </div>
+  <div class="foot">MySQL 8.4 · Spring Data JPA · FK 계약(User·Content @ManyToOne)</div>
+</body></html>

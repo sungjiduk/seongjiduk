@@ -1,0 +1,58 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8">
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { width:1600px; height:900px; font-family:"Apple SD Gothic Neo","Pretendard",system-ui,sans-serif;
+    background:#faf7f5; color:#1f2430; padding:56px 64px; }
+  .kicker { color:#f43f5e; font-weight:800; letter-spacing:.12em; font-size:17px; }
+  h1 { font-size:40px; font-weight:800; margin:6px 0 4px; }
+  .principle { display:inline-block; margin:10px 0 26px; background:#fff; border:1.5px solid #f0d9dd;
+    border-radius:999px; padding:10px 20px; font-size:19px; font-weight:700; }
+  .principle b { color:#f43f5e; }
+  .grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:26px; }
+  .col { background:#fff; border:1px solid #ece6e2; border-radius:20px; padding:22px 20px; }
+  .col h2 { font-size:23px; font-weight:800; margin-bottom:4px; }
+  .col .ep { font-size:14px; color:#8a8f98; font-family:ui-monospace,monospace; margin-bottom:16px; }
+  .node { border-radius:12px; padding:11px 14px; font-size:16px; font-weight:600; margin:8px 0; line-height:1.25; }
+  .tool { background:#eef1f6; color:#33415c; border:1px solid #d6ddea; }
+  .llm  { background:#fdeef0; color:#b02a3d; border:1px solid #f3c9d0; }
+  .arr { text-align:center; color:#b7bcc4; font-size:15px; margin:-3px 0; }
+  .legend { margin-top:22px; font-size:16px; color:#5a616c; }
+  .chip { display:inline-block; width:14px; height:14px; border-radius:4px; vertical-align:-2px; margin:0 6px 0 16px; }
+  .foot { position:absolute; bottom:30px; left:64px; color:#9aa0aa; font-size:15px; }
+</style></head><body>
+  <div class="kicker">AI LAYER · LANGGRAPH</div>
+  <h1>AI 레이어 — LangGraph 3개 그래프</h1>
+  <div class="principle">원칙: <b>LLM은 판단·언어</b>, <b>도구(코드·API)는 계산</b> — AI는 성지를 지어내지 않는다</div>
+  <div class="grid">
+    <div class="col">
+      <h2>① trip · 일정 생성</h2>
+      <div class="ep">POST /ai/trips/generate</div>
+      <div class="node tool">후보 필터 · 지리 군집</div><div class="arr">▼</div>
+      <div class="node tool">동선 2-opt · 출발지 앵커</div><div class="arr">▼</div>
+      <div class="node tool">이동시간 모델 · 식사 슬롯</div><div class="arr">▼</div>
+      <div class="node llm">제목 · Day요약 · 방문이유</div><div class="arr">▼</div>
+      <div class="node llm">대화형 재조정(자연어→제약)</div>
+    </div>
+    <div class="col">
+      <h2>② route · 코스 검증</h2>
+      <div class="ep">POST /ai/routes/verify</div>
+      <div class="node tool">네이버 블로그 후기 수집</div><div class="arr">▼</div>
+      <div class="node llm">실방문 후기 판별 · 순서 추출</div><div class="arr">▼</div>
+      <div class="node tool">시퀀스 합의 집계</div><div class="arr">▼</div>
+      <div class="node tool">코스 클러스터링 · 랭킹</div><div class="arr">▼</div>
+      <div class="node tool">🥇 검증 코스 배지</div>
+    </div>
+    <div class="col">
+      <h2>③ describe · 성지 설명</h2>
+      <div class="ep">POST /ai/spots/describe</div>
+      <div class="node tool">Anitabi 장면 데이터 근거</div><div class="arr">▼</div>
+      <div class="node llm">한국어명 · 장면설명</div><div class="arr">▼</div>
+      <div class="node llm">추천 체류시간 · 현장 팁</div><div class="arr">▼</div>
+      <div class="node llm">스팟별 미션 초안</div><div class="arr">▼</div>
+      <div class="node tool">환각 차단 · 스키마 검증</div>
+    </div>
+  </div>
+  <div class="legend"><span class="chip" style="background:#eef1f6;border:1px solid #d6ddea"></span>도구/코드 노드 (결정론)
+    <span class="chip" style="background:#fdeef0;border:1px solid #f3c9d0"></span>LLM 노드 (GPT)</div>
+  <div class="foot">seongjiduk-ai · FastAPI + LangGraph · 후보 스팟은 DB(Anitabi 임포트)에만 존재</div>
+</body></html>
