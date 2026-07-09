@@ -1,0 +1,56 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8">
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{width:1600px;height:900px;font-family:"Apple SD Gothic Neo","Pretendard",system-ui,sans-serif;
+    background:#faf7f5;color:#1f2430;padding:50px 64px 46px;display:flex;flex-direction:column}
+  .kicker{color:#f43f5e;font-weight:800;letter-spacing:.12em;font-size:17px}
+  h1{font-size:38px;font-weight:800;margin:6px 0 6px}
+  .lead{font-size:19px;color:#5a616c;margin-bottom:24px}
+  .lead b{color:#1f2430}
+  .grid{display:grid;grid-template-columns:1fr 1.25fr;gap:24px;flex:1;align-items:stretch}
+  .card{background:#fff;border:1px solid #ece6e2;border-radius:18px;padding:26px 28px;display:flex;flex-direction:column;justify-content:center}
+  .card h2{font-size:21px;font-weight:800;margin-bottom:18px}
+  .metric{display:flex;align-items:baseline;gap:14px;margin:10px 0}
+  .big{font-size:44px;font-weight:800;color:#f43f5e}
+  .arrow{font-size:26px;color:#b7bcc4}
+  .small{font-size:18px;color:#5a616c}
+  table{width:100%;border-collapse:collapse;margin-top:6px}
+  th,td{text-align:center;padding:12px 8px;font-size:19px;border-bottom:1px solid #eee}
+  th{color:#8a8f98;font-size:15px;font-weight:700}
+  td.mode{text-align:left;font-weight:700}
+  .bad{color:#c23b3b;font-weight:800} .good{color:#1a7f3c;font-weight:800}
+  .x18{background:#fdeef0;color:#b02a3d;border-radius:999px;padding:4px 14px;font-weight:800;font-size:17px}
+  .apply{margin-top:22px;display:flex;gap:12px;flex-wrap:wrap;font-size:16px}
+  .pill{background:#fff;border:1px solid #ece6e2;border-radius:999px;padding:9px 16px;font-weight:700}
+  .pill.on{border-color:#b7e6c6;background:#eafaef;color:#1a7f3c}
+  .foot{position:absolute;bottom:26px;left:64px;color:#9aa0aa;font-size:15px}
+</style></head><body>
+  <div class="kicker">기술 해자 · REDIS</div>
+  <h1>서버를 못 늘리는 제약 → Redis로 처리량·비용 방어</h1>
+  <div class="lead">외부 API를 많이 부르는데(OpenAI·Google·Naver) 인스턴스는 1대. <b>캐시·분산락·동시성 가드·레이트리미터</b>로 같은 하드웨어에서 버틴다.</div>
+  <div class="grid">
+    <div class="card">
+      <h2>① single-flight 락 — 중복 유료호출 제거</h2>
+      <p class="small">캐시 빈 첫 순간 동시 요청이 둘 다 GPT를 부르던 낭비 → 작품별 Redis 락으로 1회만 계산</p>
+      <div class="metric"><span class="big">66초</span><span class="arrow">→</span><span class="big">0.05초</span></div>
+      <p class="small">첫 호출 → 두 번째(캐시) · <b style="color:#1a7f3c">GPT 비용 절반</b> (ADR-0005)</p>
+    </div>
+    <div class="card">
+      <h2>② 동시성 가드 — 부하테스트 (동시 40 × 200요청)</h2>
+      <table>
+        <tr><th>모드</th><th>정상 처리</th><th>실패/폴백</th><th>사용자 에러</th></tr>
+        <tr><td class="mode">무제한 (Redis 전)</td><td class="bad">6 / 200</td><td>194 과부하 실패</td><td class="bad">97%</td></tr>
+        <tr><td class="mode">Redis 분산 가드</td><td class="good">107 / 200</td><td>93 로컬 폴백</td><td class="good">0</td></tr>
+      </table>
+      <p class="small" style="margin-top:14px">정상 처리 <span class="x18">6 → 107건 · 약 18배</span> · 과부하 실패를 안전한 폴백으로 전환</p>
+    </div>
+  </div>
+  <div class="apply">
+    <span class="pill">적용 지점:</span>
+    <span class="pill on">✓ AI 일정생성 · 동시성 세마포어</span>
+    <span class="pill on">✓ 네이버 블로그 · 레이트리미터</span>
+    <span class="pill on">✓ 구글 Places·Geocoding · 레이트리미터</span>
+    <span class="pill">+ fail-open (Redis 장애 시 통과)</span>
+  </div>
+  <div class="foot">Redis(Lua 원자·ZSET 세마포어) · mode 토글(redis/local/off)로 벤치 · EC2 라이브 mode=redis</div>
+</body></html>

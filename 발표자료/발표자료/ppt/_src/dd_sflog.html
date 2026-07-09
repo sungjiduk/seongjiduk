@@ -1,0 +1,40 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8">
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{width:1600px;height:900px;font-family:"Apple SD Gothic Neo","Pretendard",system-ui,sans-serif;
+    background:#faf7f5;color:#1f2430;padding:50px 64px}
+  .kicker{color:#f43f5e;font-weight:800;letter-spacing:.12em;font-size:17px}
+  h1{font-size:38px;font-weight:800;margin:6px 0 6px}
+  .lead{font-size:18px;color:#5a616c;margin-bottom:22px}
+  .term{background:#0f1620;border-radius:16px;padding:0;overflow:hidden;box-shadow:0 12px 40px rgba(20,25,35,.18)}
+  .bar{background:#1b2330;padding:12px 18px;display:flex;align-items:center;gap:8px}
+  .bar i{width:12px;height:12px;border-radius:50%;display:inline-block}
+  .r{background:#ff5f57}.y{background:#febc2e}.g{background:#28c840}
+  .bar span{margin-left:12px;color:#8a94a6;font-family:ui-monospace,monospace;font-size:14px}
+  pre{font-family:ui-monospace,SFMono-Regular,monospace;font-size:18px;line-height:1.85;color:#d8deea;padding:22px 26px;white-space:pre-wrap}
+  .t{color:#7f8aa0}.miss{color:#ff9a9a}.lock{color:#ffcf7a}.ok{color:#8effa3}.hit{color:#8ab4ff}.cmt{color:#6b7688}.b{font-weight:700}
+  .sum{margin-top:22px;display:flex;gap:16px}
+  .box{background:#fff;border:1px solid #ece6e2;border-radius:14px;padding:16px 22px;font-size:19px;font-weight:700}
+  .box b{color:#f43f5e;font-size:24px}
+  .box .g2{color:#1a7f3c}
+  .foot{position:absolute;bottom:26px;left:64px;color:#9aa0aa;font-size:15px}
+</style></head><body>
+  <div class="kicker">기술 해자 · SINGLE-FLIGHT</div>
+  <h1>동시 요청이 GPT를 두 번 부르던 낭비 — 락으로 1회만</h1>
+  <div class="lead">캐시가 빈 첫 순간, 동시에 들어온 두 요청이 <b>둘 다</b> GPT를 호출(React StrictMode가 상시 재현). 작품별 락으로 첫 요청만 계산하고 나머지는 결과를 기다린다.</div>
+  <div class="term">
+    <div class="bar"><i class="r"></i><i class="y"></i><i class="g"></i><span>backend — describe single-flight (content=1 · 러브라이브 33 spots)</span></div>
+<pre><span class="t">[00:00.00]</span> describe content=1 → 캐시 <span class="miss b">MISS</span>
+<span class="t">[00:00.00]</span> <span class="lock">🔒 describe-lock 획득</span> (content=1) — GPT 호출 시작
+<span class="t">[00:00.01]</span> describe content=1 <span class="cmt">(동시 요청 #2)</span> → lock 대기… <span class="cmt"># StrictMode 재현</span>
+<span class="t">[01:06.10]</span> <span class="ok b">✅ GPT describe 완료</span> (33 spots) — 캐시 저장  <span class="cmt">← 66.10s</span>
+<span class="t">[01:06.10]</span> <span class="lock">🔓 lock 해제</span>
+<span class="t">[01:06.15]</span> describe content=1 <span class="cmt">(대기중이던 #2)</span> → 캐시 <span class="hit b">HIT</span> 0.05s  <span class="cmt">← GPT 재호출 없음</span></pre>
+  </div>
+  <div class="sum">
+    <div class="box">첫 호출 <b>66초</b> → 두 번째 <b>0.05초</b></div>
+    <div class="box">GPT 호출 <span class="g2">2회 → 1회</span> · <span class="g2">비용 절반</span></div>
+    <div class="box" style="font-weight:600;font-size:16px;color:#5a616c">ADR-0005 · 상용화 시 Redis 분산락으로 인스턴스 간 확장</div>
+  </div>
+  <div class="foot">ContentService.describeLocks · 락 획득 후 캐시 재확인(double-checked)</div>
+</body></html>

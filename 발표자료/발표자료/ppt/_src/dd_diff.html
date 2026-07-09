@@ -1,0 +1,56 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8">
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{width:1600px;height:900px;font-family:"Apple SD Gothic Neo","Pretendard",system-ui,sans-serif;
+    background:#faf7f5;color:#1f2430;padding:52px 64px}
+  .kicker{color:#f43f5e;font-weight:800;letter-spacing:.12em;font-size:17px}
+  h1{font-size:38px;font-weight:800;margin:6px 0 22px}
+  .flow{display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px;align-items:stretch}
+  .card{background:#fff;border:1px solid #ece6e2;border-radius:16px;padding:20px 22px}
+  .tag{display:inline-block;font-size:14px;font-weight:800;border-radius:8px;padding:4px 12px;margin-bottom:12px}
+  .t-sym{background:#fdecec;color:#b02a3d} .t-cause{background:#fff4e5;color:#a15c00} .t-fix{background:#eafaef;color:#1a7f3c}
+  h3{font-size:20px;margin-bottom:10px}
+  code,pre{font-family:ui-monospace,SFMono-Regular,monospace;font-size:14.5px}
+  pre{background:#1e2430;color:#e6e9ef;border-radius:10px;padding:14px 16px;overflow:hidden;line-height:1.5;white-space:pre-wrap;word-break:break-all}
+  .err{color:#ff8a8a} .path{color:#8ab4f8}
+  .diff{background:#0f1620;border-radius:10px;padding:14px 16px;font-size:14.5px;line-height:1.55}
+  .diff .del{color:#ff9a9a;background:rgba(255,80,80,.12);display:block}
+  .diff .add{color:#9cff9c;background:rgba(80,255,120,.10);display:block}
+  .diff .ctx{color:#aeb6c2;display:block}
+  .lesson{margin-top:24px;background:#fff;border:1px dashed #e0b8bf;border-radius:14px;padding:16px 22px;font-size:18px}
+  .lesson b{color:#f43f5e}
+  .foot{position:absolute;bottom:28px;left:64px;color:#9aa0aa;font-size:15px}
+</style></head><body>
+  <div class="kicker">TROUBLESHOOTING · DEPLOY</div>
+  <h1>ai-service 부팅 실패 — 원인은 Dockerfile 한 줄</h1>
+  <div class="flow">
+    <div class="card"><span class="tag t-sym">증상</span>
+      <h3>컨테이너 crash 반복</h3>
+      <pre>Traceback ...
+  File "/app/main.py", line 10
+<span class="err">ModuleNotFoundError:
+ No module named 'route_graph'</span></pre>
+      <p style="margin-top:10px;font-size:15px;color:#5a616c">describe·일정·검증이 전부 ai-service 미도달 → 조용히 폴백</p>
+    </div>
+    <div class="card"><span class="tag t-cause">원인</span>
+      <h3>COPY가 파일을 개별 나열</h3>
+      <pre><span class="path">main.py</span>는 route_graph를
+import 하는데, Dockerfile은
+그 파일을 <b style="color:#ffcf7a">복사 목록에서 누락</b>
+→ 이미지에 route_graph.py 없음</pre>
+      <p style="margin-top:10px;font-size:15px;color:#5a616c">로컬은 파일이 있어 통과 → 배포에서만 터짐</p>
+    </div>
+    <div class="card"><span class="tag t-fix">해결 (ai #19)</span>
+      <h3>전체 모듈 복사</h3>
+      <div class="diff">
+<span class="ctx"> COPY requirements.txt .</span>
+<span class="del">- COPY main.py ... trip_graph.py ./</span>
+<span class="add">+ COPY *.py ./</span>
+<span class="ctx"> EXPOSE 8000</span>
+      </div>
+      <p style="margin-top:10px;font-size:15px;color:#5a616c">새 모듈 추가 시 재발 방지</p>
+    </div>
+  </div>
+  <div class="lesson">💡 <b>교훈</b>: 개별 파일 나열 COPY는 새 모듈이 늘 때마다 배포에서 조용히 깨진다. 그리고 <b>배포 후 이미지 Created 시각을 최신 CI 빌드와 대조</b>(stale 이미지 방지).</div>
+  <div class="foot">commit 9a36893 · Dockerfile 1 file changed (+2 −1)</div>
+</body></html>
