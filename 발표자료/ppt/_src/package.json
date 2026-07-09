@@ -1,0 +1,17 @@
+{
+  "name": "_src",
+  "version": "1.0.0",
+  "description": "- `slides.html` — 18슬라이드 전체 디자인(Pretendard·코랄×인디고). 데모/관리자 스샷은 `../*.png` 참조(심링크 `F` 필요). - `render_all.mjs` — slides.html의 각 `#sN` 섹션을 `rendered/slide-NN.png`로 렌더(Playwright, 시스템 Chrome). - `assemble.mjs` — rendered PNG 18장을 풀블리드로 `.pptx` 조립(pptxgenjs). - `dd_*.html`, `capture*.mjs` — 초기 딥다이브 이미지/서비스 스크린샷 캡처(이미 `../*.png`에 결과 있음).",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "playwright-core": "^1.61.1",
+    "pptxgenjs": "^4.0.1"
+  }
+}

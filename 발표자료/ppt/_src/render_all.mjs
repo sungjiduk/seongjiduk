@@ -7,7 +7,7 @@ const p = await ctx.newPage();
 await p.goto('file://'+SC+'/slides.html', { waitUntil:'networkidle', timeout:30000 });
 try { await p.evaluate(()=>document.fonts.ready); } catch{}
 await p.waitForTimeout(1200);
-for (let i=1;i<=18;i++){
+for (let i=1;i<=19;i++){
   const id='#s'+i, n=String(i).padStart(2,'0');
   await p.locator(id).screenshot({ path:`${OUT}/slide-${n}.png` });
   console.log('✅ slide-'+n);
