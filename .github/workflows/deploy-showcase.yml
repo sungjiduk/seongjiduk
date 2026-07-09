@@ -13,6 +13,9 @@
 name: Trigger showcase deploy
 
 on:
+  # 트러블슈팅 이슈가 올라오거나 수정되면 즉시 재배포(빌드 때 이슈를 재집계) — 30분 크론 대기 제거
+  issues:
+    types: [opened, edited, reopened, labeled, unlabeled, closed]
   schedule:
     - cron: "*/30 * * * *"
   workflow_dispatch:
