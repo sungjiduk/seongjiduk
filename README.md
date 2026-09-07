@@ -2,6 +2,12 @@
 
 오덕후를 위한 성지순례 기반 AI 여행 플래너.
 
+> **현재 배포:** https://sungjiduk.pages.dev (Cloudflare Pages)
+>
+> 프론트엔드만 배포된 상태입니다. 백엔드·AI·DB는 기동되어 있지 않아 화면은 목(mock) 데이터로 동작하며,
+> 작품별 성지는 실제 데이터(러브라이브 33곳 등)가 아니라 목데이터 4곳만 표시됩니다.
+> 기존 운영 주소 `holymoly.cloud`는 EC2 인스턴스 종료로 **접속 불가**입니다.
+
 실제 고객이 사용할 수 있는 수준의 웹 서비스 개발 프로젝트입니다. 진행 기간은 2026-06-29 ~ 2026-07-10이며, 발표일은 2026-07-10입니다.
 
 ## 서비스 개요
@@ -19,9 +25,9 @@
 
 | 제출물 | 위치 |
 |--------|------|
-| 서비스 URL (HTTPS) | https://holymoly.cloud |
-| Swagger API 페이지 | https://holymoly.cloud/swagger-ui/index.html |
-| 모니터링 (Grafana) | https://holymoly.cloud/grafana/ — "성지덕 서비스 통계" 대시보드 (익명 열람 가능) |
+| 서비스 URL (HTTPS) | https://sungjiduk.pages.dev — 현재 배포(프론트만)<br>~~https://holymoly.cloud~~ — 발표 당시 운영 주소, EC2 종료로 접속 불가 |
+| Swagger API 페이지 | ~~https://holymoly.cloud/swagger-ui/index.html~~ — 백엔드 미기동. 로컬: `http://localhost:8080/swagger-ui/index.html` |
+| 모니터링 (Grafana) | ~~https://holymoly.cloud/grafana/~~ — "성지덕 서비스 통계" 대시보드, EC2 종료로 접속 불가 |
 | ERD | [기획/04_도메인_모델_ERD.md](기획/04_도메인_모델_ERD.md) |
 | FlowChart | [기획/12_서비스_플로우차트.md](기획/12_서비스_플로우차트.md) |
 | Class Diagram | [기획/13_클래스_다이어그램.md](기획/13_클래스_다이어그램.md) |
